@@ -1,0 +1,765 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==========================================
+// AUTH & USERS
+// ==========================================
+
+model Role {
+  id          String       @id @default(uuid()) @db.Uuid
+  name        String       @unique @db.VarChar(50)
+  description String?      @db.VarChar(500)
+  permissions RolePermission[]
+  users       User[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+
+  @@map("roles")
+}
+
+model Permission {
+  id          String          @id @default(uuid()) @db.Uuid
+  code        String          @unique @db.VarChar(100)
+  name        String          @db.VarChar(200)
+  description String?         @db.VarChar(500)
+  roles       RolePermission[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  roleId       String     @db.Uuid
+  permissionId String     @db.Uuid
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model User {
+  id           String    @id @default(uuid()) @db.Uuid
+  fullName     String    @db.VarChar(200)
+  username     String    @unique @db.VarChar(50)
+  passwordHash String    @db.VarChar(255)
+  pinCode      String?   @db.VarChar(10)
+  isActive     Boolean   @default(true)
+  roleId       String    @db.Uuid
+  lastLoginAt  DateTime?
+  branchId     String?   @db.Uuid
+
+  role          Role          @relation(fields: [roleId], references: [id])
+  branch        Branch?       @relation(fields: [branchId], references: [id])
+  orders        Order[]       @relation("CashierOrders")
+  waiterOrders  Order[]       @relation("WaiterOrders")
+  managedTables RestaurantTable[]
+  payments      Payment[]
+  sessions      Session[]
+  refreshTokens RefreshToken[]
+  auditLogs     AuditLog[]
+  printJobs     PrintJob[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+  createdBy String?   @db.Uuid
+  updatedBy String?   @db.Uuid
+
+  @@index([username])
+  @@index([roleId])
+  @@index([branchId])
+  @@map("users")
+}
+
+model Session {
+  id             String   @id @default(uuid()) @db.Uuid
+  userId         String   @db.Uuid
+  deviceId       String   @db.VarChar(100)
+  ipAddress      String?  @db.VarChar(45)
+  userAgent      String?  @db.VarChar(500)
+  lastActivityAt DateTime @default(now())
+  isActive       Boolean  @default(true)
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([deviceId])
+  @@map("sessions")
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  token     String   @unique @db.VarChar(500)
+  expiresAt DateTime
+  sessionId String   @db.Uuid
+  isRevoked Boolean  @default(false)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([token])
+  @@map("refresh_tokens")
+}
+
+// ==========================================
+// COMPANY & BRANCH
+// ==========================================
+
+model Company {
+  id              String   @id @default(uuid()) @db.Uuid
+  name            String   @db.VarChar(200)
+  inn             String?  @db.VarChar(20)
+  address         String?  @db.VarChar(500)
+  phone           String?  @db.VarChar(20)
+  logoUrl         String?  @db.VarChar(500)
+  defaultCurrency String   @default("UZS") @db.VarChar(10)
+  defaultLocale   String   @default("ru") @db.VarChar(10)
+  branches        Branch[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+  createdBy String?   @db.Uuid
+  updatedBy String?   @db.Uuid
+
+  @@map("companies")
+}
+
+model Branch {
+  id        String  @id @default(uuid()) @db.Uuid
+  name      String  @db.VarChar(200)
+  address   String? @db.VarChar(500)
+  phone     String? @db.VarChar(20)
+  isActive  Boolean @default(true)
+  companyId String  @db.Uuid
+
+  company   Company @relation(fields: [companyId], references: [id])
+  users     User[]
+  orders    Order[]
+  devices   Device[]
+  tables    RestaurantTable[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+  createdBy String?   @db.Uuid
+  updatedBy String?   @db.Uuid
+
+  @@index([companyId])
+  @@map("branches")
+}
+
+model Device {
+  id           String    @id @default(uuid()) @db.Uuid
+  name         String    @db.VarChar(200)
+  code         String    @unique @db.VarChar(50)
+  type         String    @db.VarChar(50)
+  branchId     String?   @db.Uuid
+  lastActiveAt DateTime?
+  branch       Branch?   @relation(fields: [branchId], references: [id])
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+  createdBy String?   @db.Uuid
+  updatedBy String?   @db.Uuid
+
+  @@index([code])
+  @@index([branchId])
+  @@map("devices")
+}
+
+// ==========================================
+// CATALOG
+// ==========================================
+
+model Category {
+  id         String     @id @default(uuid()) @db.Uuid
+  name       String     @db.VarChar(200)
+  nameRu     String     @db.VarChar(200)
+  nameEn     String     @db.VarChar(200)
+  nameUz     String     @db.VarChar(200)
+  parentId   String?    @db.Uuid
+  sortOrder  Int        @default(0)
+  icon       String?    @db.VarChar(50)
+  color      String?    @db.VarChar(20)
+  imageUrl   String?
+  isActive   Boolean    @default(true)
+  parent     Category?  @relation("CategoryTree", fields: [parentId], references: [id])
+  children   Category[] @relation("CategoryTree")
+  products   Product[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+  createdBy String?   @db.Uuid
+  updatedBy String?   @db.Uuid
+
+  @@index([parentId])
+  @@index([sortOrder])
+  @@map("categories")
+}
+
+model Product {
+  id               String          @id @default(uuid()) @db.Uuid
+  categoryId       String          @db.Uuid
+  sku              String          @unique @db.VarChar(50)
+  barcode          String?         @unique @db.VarChar(20)
+  name             String          @db.VarChar(200)
+  nameRu           String          @db.VarChar(200)
+  nameEn           String          @db.VarChar(200)
+  nameUz           String          @db.VarChar(200)
+  description      String?         @db.VarChar(1000)
+  price            Decimal         @db.Decimal(12, 2)
+  cost             Decimal         @db.Decimal(12, 2) @default(0)
+  taxRate          Decimal         @db.Decimal(5, 2) @default(0)
+  imageUrl         String?         @db.VarChar(500)
+  isActive         Boolean         @default(true)
+  trackInventory   Boolean         @default(true)
+  kitchenStationId String?         @db.Uuid
+  category         Category        @relation(fields: [categoryId], references: [id])
+  kitchenStation   KitchenStation? @relation(fields: [kitchenStationId], references: [id])
+  orderItems       OrderItem[]
+  inventories      Inventory[]
+  stockMovements   StockMovement[]
+  transferItems    StockTransferItem[]
+  countItems       InventoryCountItem[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+  createdBy String?   @db.Uuid
+  updatedBy String?   @db.Uuid
+
+  @@index([categoryId])
+  @@index([sku])
+  @@index([barcode])
+  @@map("products")
+}
+
+// ==========================================
+// ORDERS & PAYMENTS
+// ==========================================
+
+model Order {
+  id           String      @id @default(uuid()) @db.Uuid
+  orderNumber  String      @unique @db.VarChar(50)
+  status       OrderStatus @default(DRAFT)
+  cashierId    String      @db.Uuid
+  waiterId     String?     @db.Uuid
+  tableId      String?     @db.Uuid
+  customerId   String?     @db.Uuid
+  subtotal     Decimal     @db.Decimal(12, 2) @default(0)
+  discount     Decimal     @db.Decimal(12, 2) @default(0)
+  tax          Decimal     @db.Decimal(12, 2) @default(0)
+  total        Decimal     @db.Decimal(12, 2) @default(0)
+  notes        String?     @db.VarChar(1000)
+  branchId     String      @db.Uuid
+  cashier      User        @relation("CashierOrders", fields: [cashierId], references: [id])
+  waiter       User?       @relation("WaiterOrders", fields: [waiterId], references: [id])
+  customer     Customer?   @relation(fields: [customerId], references: [id])
+  branch       Branch      @relation(fields: [branchId], references: [id])
+  restaurantTable RestaurantTable? @relation(fields: [tableId], references: [id])
+  items        OrderItem[]
+  payments     Payment[]
+  kitchenTickets KitchenTicket[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+  createdBy String?   @db.Uuid
+  updatedBy String?   @db.Uuid
+
+  @@index([orderNumber])
+  @@index([status])
+  @@index([cashierId])
+  @@index([waiterId])
+  @@index([customerId])
+  @@index([branchId])
+  @@index([createdAt])
+  @@map("orders")
+}
+
+model OrderItem {
+  id        String              @id @default(uuid()) @db.Uuid
+  orderId   String              @db.Uuid
+  productId String              @db.Uuid
+  quantity  Decimal             @db.Decimal(10, 3)
+  unitPrice Decimal             @db.Decimal(12, 2)
+  discount  Decimal             @db.Decimal(12, 2) @default(0)
+  total     Decimal             @db.Decimal(12, 2)
+  note      String?             @db.VarChar(500)
+  status    KitchenTicketStatus @default(NEW)
+  order     Order               @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product   Product             @relation(fields: [productId], references: [id])
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([orderId])
+  @@index([productId])
+  @@map("order_items")
+}
+
+model Payment {
+  id            String        @id @default(uuid()) @db.Uuid
+  orderId       String        @db.Uuid
+  method        PaymentMethod
+  amount        Decimal       @db.Decimal(12, 2)
+  status        PaymentStatus @default(PENDING)
+  transactionId String?       @db.VarChar(200)
+  processedBy   String        @db.Uuid
+  order         Order         @relation(fields: [orderId], references: [id])
+  processor     User          @relation(fields: [processedBy], references: [id])
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+  createdBy String?   @db.Uuid
+  updatedBy String?   @db.Uuid
+
+  @@index([orderId])
+  @@index([status])
+  @@index([method])
+  @@map("payments")
+}
+
+// ==========================================
+// CUSTOMERS
+// ==========================================
+
+model Customer {
+  id          String         @id @default(uuid()) @db.Uuid
+  fullName    String         @db.VarChar(200)
+  phone       String?        @unique @db.VarChar(20)
+  email       String?        @db.VarChar(200)
+  birthDate   DateTime?
+  status      CustomerStatus @default(NEW)
+  bonusBalance Decimal        @db.Decimal(12, 2) @default(0)
+  totalSpent  Decimal        @db.Decimal(12, 2) @default(0)
+  totalOrders Int            @default(0)
+  lastVisitAt DateTime?
+  notes       String?        @db.VarChar(1000)
+  orders      Order[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+  createdBy String?   @db.Uuid
+  updatedBy String?   @db.Uuid
+
+  @@index([phone])
+  @@index([fullName])
+  @@map("customers")
+}
+
+// ==========================================
+// KITCHEN
+// ==========================================
+
+model KitchenStation {
+  id        String    @id @default(uuid()) @db.Uuid
+  name      String    @db.VarChar(100)
+  printerId String?   @db.Uuid
+  sortOrder Int       @default(0)
+  isActive  Boolean   @default(true)
+  printer   Printer?  @relation(fields: [printerId], references: [id])
+  products  Product[]
+  tickets   KitchenTicket[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([sortOrder])
+  @@map("kitchen_stations")
+}
+
+model KitchenTicket {
+  id        String              @id @default(uuid()) @db.Uuid
+  orderId   String              @db.Uuid
+  printerId String?             @db.Uuid
+  stationId String              @db.Uuid
+  status    KitchenTicketStatus @default(NEW)
+  printedAt DateTime?
+  order     Order               @relation(fields: [orderId], references: [id])
+  printer   Printer?            @relation(fields: [printerId], references: [id])
+  station   KitchenStation      @relation(fields: [stationId], references: [id])
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([orderId])
+  @@index([stationId])
+  @@index([status])
+  @@map("kitchen_tickets")
+}
+
+// ==========================================
+// PRINTING
+// ==========================================
+
+model Printer {
+  id         String           @id @default(uuid()) @db.Uuid
+  name       String           @db.VarChar(200)
+  type       String           @db.VarChar(50)
+  ipAddress  String?          @db.VarChar(45)
+  port       Int?
+  department String           @db.VarChar(50)
+  paperWidth Int              @default(80)
+  isActive   Boolean          @default(true)
+  status     String           @default("Online") @db.VarChar(50)
+  stations   KitchenStation[]
+  tickets    KitchenTicket[]
+  printJobs  PrintJob[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+  createdBy String?   @db.Uuid
+  updatedBy String?   @db.Uuid
+
+  @@index([department])
+  @@map("printers")
+}
+
+model PrintJob {
+  id          String        @id @default(uuid()) @db.Uuid
+  printerId   String        @db.Uuid
+  type        PrintJobType
+  status      PrintJobStatus @default(PENDING)
+  data        Json
+  attempts    Int           @default(0)
+  maxAttempts Int           @default(3)
+  lastError   String?       @db.VarChar(1000)
+  printedAt   DateTime?
+  userId      String?       @db.Uuid
+  printer     Printer       @relation(fields: [printerId], references: [id])
+  user        User?         @relation(fields: [userId], references: [id])
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([printerId])
+  @@index([status])
+  @@index([type])
+  @@map("print_jobs")
+}
+
+// ==========================================
+// INVENTORY
+// ==========================================
+
+model Inventory {
+  id           String  @id @default(uuid()) @db.Uuid
+  productId    String  @unique @db.Uuid
+  quantity     Decimal @db.Decimal(12, 3) @default(0)
+  minQuantity  Decimal @db.Decimal(12, 3) @default(0)
+  maxQuantity  Decimal? @db.Decimal(12, 3)
+  warehouseId  String? @db.Uuid
+  product      Product @relation(fields: [productId], references: [id])
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+  createdBy String?   @db.Uuid
+  updatedBy String?   @db.Uuid
+
+  @@index([warehouseId])
+  @@map("inventory")
+}
+
+model StockMovement {
+  id          String            @id @default(uuid()) @db.Uuid
+  productId   String            @db.Uuid
+  type        StockMovementType
+  quantity    Decimal           @db.Decimal(12, 3)
+  referenceId String?           @db.Uuid
+  notes       String?           @db.VarChar(500)
+  warehouseId String?           @db.Uuid
+  product     Product           @relation(fields: [productId], references: [id])
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+  createdBy String?   @db.Uuid
+  updatedBy String?   @db.Uuid
+
+  @@index([productId])
+  @@index([type])
+  @@index([createdAt])
+  @@map("stock_movements")
+}
+
+model Supplier {
+  id            String  @id @default(uuid()) @db.Uuid
+  name          String  @db.VarChar(200)
+  inn           String? @db.VarChar(20)
+  phone         String? @db.VarChar(20)
+  email         String? @db.VarChar(200)
+  address       String? @db.VarChar(500)
+  contactPerson String? @db.VarChar(200)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+  createdBy String?   @db.Uuid
+  updatedBy String?   @db.Uuid
+
+  @@index([name])
+  @@map("suppliers")
+}
+
+// ==========================================
+// STOCK TRANSFERS
+// ==========================================
+
+model StockTransfer {
+  id               String           @id @default(uuid()) @db.Uuid
+  fromWarehouseId  String           @db.Uuid
+  toWarehouseId    String           @db.Uuid
+  status           TransferStatus   @default(DRAFT)
+  notes            String?          @db.VarChar(500)
+  items            StockTransferItem[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+  createdBy String?   @db.Uuid
+  updatedBy String?   @db.Uuid
+
+  @@index([status])
+  @@map("stock_transfers")
+}
+
+model StockTransferItem {
+  id               String        @id @default(uuid()) @db.Uuid
+  transferId       String        @db.Uuid
+  productId        String        @db.Uuid
+  quantity         Decimal       @db.Decimal(12, 3)
+  receivedQuantity Decimal?      @db.Decimal(12, 3)
+  transfer         StockTransfer @relation(fields: [transferId], references: [id], onDelete: Cascade)
+  product          Product       @relation(fields: [productId], references: [id])
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([transferId])
+  @@map("stock_transfer_items")
+}
+
+// ==========================================
+// INVENTORY COUNT
+// ==========================================
+
+model InventoryCount {
+  id          String               @id @default(uuid()) @db.Uuid
+  status      InventoryCountStatus @default(DRAFT)
+  warehouseId String?              @db.Uuid
+  notes       String?              @db.VarChar(500)
+  items       InventoryCountItem[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+  createdBy String?   @db.Uuid
+  updatedBy String?   @db.Uuid
+
+  @@index([status])
+  @@map("inventory_counts")
+}
+
+model InventoryCountItem {
+  id              String         @id @default(uuid()) @db.Uuid
+  countId         String         @db.Uuid
+  productId       String         @db.Uuid
+  systemQuantity  Decimal        @db.Decimal(12, 3)
+  actualQuantity  Decimal?       @db.Decimal(12, 3)
+  difference      Decimal?       @db.Decimal(12, 3)
+  count           InventoryCount @relation(fields: [countId], references: [id], onDelete: Cascade)
+  product         Product        @relation(fields: [productId], references: [id])
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([countId])
+  @@map("inventory_count_items")
+}
+
+// ==========================================
+// RESTAURANT TABLES
+// ==========================================
+
+model RestaurantTable {
+  id         String      @id @default(uuid()) @db.Uuid
+  name       String      @db.VarChar(50)
+  number     Int         @unique
+  seats      Int         @default(4)
+  zone       String?     @db.VarChar(50)
+  status     TableStatus @default(FREE)
+  waiterId   String?     @db.Uuid
+  branchId   String      @db.Uuid
+  isActive   Boolean     @default(true)
+  waiter     User?       @relation(fields: [waiterId], references: [id])
+  branch     Branch      @relation(fields: [branchId], references: [id])
+  orders     Order[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([status])
+  @@index([waiterId])
+  @@index([branchId])
+  @@index([number])
+  @@map("restaurant_tables")
+}
+
+// ==========================================
+// AUDIT LOG
+// ==========================================
+
+model AuditLog {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  deviceId  String?  @db.Uuid
+  ipAddress String?  @db.VarChar(45)
+  action    String   @db.VarChar(100)
+  entity    String   @db.VarChar(100)
+  entityId  String?  @db.Uuid
+  oldValues Json?
+  newValues Json?
+  result    AuditResult @default(SUCCESS)
+  user      User     @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([entity])
+  @@index([entityId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+// ==========================================
+// ENUMS
+// ==========================================
+
+enum OrderStatus {
+  DRAFT
+  PENDING
+  SENT_TO_KITCHEN
+  PREPARING
+  READY
+  COMPLETED
+  CANCELLED
+  RETURNED
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
+  CLICK
+  PAYME
+  UZUM_BANK
+  MIXED
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+enum KitchenTicketStatus {
+  NEW
+  ACCEPTED
+  PREPARING
+  READY
+  SERVED
+  CANCELLED
+}
+
+enum PrintJobType {
+  RECEIPT
+  KITCHEN_TICKET
+  BAR_TICKET
+  DESSERT_TICKET
+  RETURN
+  X_REPORT
+  Z_REPORT
+}
+
+enum PrintJobStatus {
+  PENDING
+  PRINTING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum CustomerStatus {
+  NEW
+  REGULAR
+  VIP
+  BLOCKED
+}
+
+enum StockMovementType {
+  SALE
+  RETURN
+  RECEIPT
+  WRITE_OFF
+  TRANSFER
+  INVENTORY
+  ADJUSTMENT
+}
+
+enum TransferStatus {
+  DRAFT
+  IN_TRANSIT
+  COMPLETED
+  CANCELLED
+}
+
+enum InventoryCountStatus {
+  DRAFT
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum AuditResult {
+  SUCCESS
+  FAILURE
+}
+
+enum TableStatus {
+  FREE
+  OCCUPIED
+  RESERVED
+  CLEANING
+}

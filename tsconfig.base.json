@@ -1,0 +1,40 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "baseUrl": ".",
+    "paths": {
+      "@openpos/shared": ["./packages/shared/src"],
+      "@openpos/shared/*": ["./packages/shared/src/*"],
+      "@openpos/config": ["./packages/config/src"],
+      "@openpos/config/*": ["./packages/config/src/*"],
+      "@openpos/auth": ["./packages/auth/src"],
+      "@openpos/auth/*": ["./packages/auth/src/*"],
+      "@openpos/ui": ["./packages/ui/src"],
+      "@openpos/ui/*": ["./packages/ui/src/*"],
+      "@openpos/database": ["./packages/database/src"],
+      "@openpos/database/*": ["./packages/database/src/*"],
+      "@openpos/websocket": ["./packages/websocket/src"],
+      "@openpos/websocket/*": ["./packages/websocket/src/*"],
+      "@openpos/printer": ["./packages/printer/src"],
+      "@openpos/printer/*": ["./packages/printer/src/*"]
+    }
+  },
+  "exclude": ["node_modules", "dist", "build", ".next", ".nuxt"]
+}

@@ -1,0 +1,37 @@
+{
+  "name": "@openpos/kitchen",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src/",
+    "lint:fix": "eslint src/ --fix"
+  },
+  "dependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-router-dom": "^7.1.1",
+    "@tanstack/react-query": "^5.62.14",
+    "zustand": "^5.0.3",
+    "axios": "^1.7.9",
+    "lucide-react": "^0.468.0",
+    "date-fns": "^4.1.0",
+    "socket.io-client": "^4.8.1",
+    "@openpos/shared": "workspace:*",
+    "@openpos/ui": "workspace:*",
+    "@openpos/config": "workspace:*"
+  },
+  "devDependencies": {
+    "vite": "^6.0.7",
+    "@vitejs/plugin-react": "^4.3.4",
+    "typescript": "5.7.3",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "tailwindcss": "^4.0.0",
+    "@tailwindcss/vite": "^4.0.0"
+  }
+}

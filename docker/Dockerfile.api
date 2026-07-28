@@ -1,0 +1,38 @@
+FROM node:20-alpine AS base
+RUN corepack enable && corepack prepare pnpm@latest --activate
+WORKDIR /app
+
+FROM base AS deps
+COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
+COPY packages/database/package.json ./packages/database/
+COPY packages/shared/package.json ./packages/shared/
+COPY packages/config/package.json ./packages/config/
+COPY packages/auth/package.json ./packages/auth/
+COPY packages/printer/package.json ./packages/printer/
+COPY packages/websocket/package.json ./packages/websocket/
+COPY apps/api/package.json ./apps/api/
+RUN pnpm install --frozen-lockfile
+
+FROM base AS builder
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/packages ./packages
+COPY --from=deps /app/apps ./apps
+COPY pnpm-workspace.yaml tsconfig.base.json package.json ./
+COPY packages/database/prisma ./packages/database/prisma
+RUN pnpm --filter @openpos/database exec prisma generate
+RUN pnpm --filter @openpos/api exec tsc
+
+FROM node:20-alpine AS runner
+RUN corepack enable && corepack prepare pnpm@latest --activate
+WORKDIR /app
+
+COPY --from=builder /app/apps/api/dist ./apps/api/dist
+COPY --from=builder /app/apps/api/package.json ./apps/api/
+COPY --from=builder /app/packages ./packages
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/pnpm-lock.yaml ./
+
+ENV NODE_ENV=production
+EXPOSE 3001
+
+CMD ["node", "apps/api/dist/main.js"]

@@ -1,0 +1,66 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+dist/
+build/
+.next/
+.nuxt/
+.output/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Testing
+coverage/
+.nyc_output/
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Prisma
+packages/database/prisma/migrations/
+
+# Docker
+docker/data/
+
+# Electron
+apps/pos/dist-electron/
+apps/kitchen/dist-electron/
+
+# Temp
+tmp/
+temp/
+*.tmp
+
+# Cache
+.eslintcache
+*.tsbuildinfo
+
+# Personal
+IMG_8344.jpg
+фото котогория/
+AI promts/
+ИСТОРИЯ_ЧАТА.md
+OPENPOS_MASTER_SPECIFICATION.md.md
+PROJECT_PROGRESS.md
+nohup.out
+/tmp/
