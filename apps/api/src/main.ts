@@ -30,13 +30,15 @@ async function bootstrap(): Promise<void> {
     }),
   );
 
+  const corsOrigins = [
+    process.env['ADMIN_URL'] ?? 'http://localhost:5173',
+    process.env['POS_URL'] ?? 'http://localhost:5174',
+    process.env['KITCHEN_URL'] ?? 'http://localhost:5175',
+    process.env['CUSTOMER_DISPLAY_URL'] ?? 'http://localhost:5176',
+  ];
+
   app.enableCors({
-    origin: [
-      process.env['ADMIN_URL'] ?? 'http://localhost:5173',
-      process.env['POS_URL'] ?? 'http://localhost:5174',
-      process.env['KITCHEN_URL'] ?? 'http://localhost:5175',
-      process.env['CUSTOMER_DISPLAY_URL'] ?? 'http://localhost:5176',
-    ],
+    origin: corsOrigins,
     credentials: true,
   });
 

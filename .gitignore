@@ -36,9 +36,6 @@ pnpm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Prisma
-packages/database/prisma/migrations/
-
 # Docker
 docker/data/
 
@@ -64,3 +61,4 @@ OPENPOS_MASTER_SPECIFICATION.md.md
 PROJECT_PROGRESS.md
 nohup.out
 /tmp/
+.vercel
