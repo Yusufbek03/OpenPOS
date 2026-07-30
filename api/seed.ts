@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { supabase, json, error, corsPreflight } from './lib/supabase';
+import { json, error, corsPreflight } from './lib/supabase';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'OPTIONS') return corsPreflight(res, req.headers.origin);
@@ -9,56 +9,76 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const secret = req.headers['x-seed-secret'];
   if (secret !== 'openpos-seed-2026') return error(res, 'Forbidden', 403, origin);
 
-  const results: Record<string, unknown> = {};
+  const poolerUrl = process.env.DATABASE_URL;
+  if (!poolerUrl) return error(res, 'DATABASE_URL not set', 500, origin);
 
-  const roles = [
-    { id: 'a0000001-0000-0000-0000-000000000001', name: 'OWNER', description: 'Владелец системы' },
-    { id: 'a0000001-0000-0000-0000-000000000002', name: 'ADMINISTRATOR', description: 'Администратор' },
-    { id: 'a0000001-0000-0000-0000-000000000003', name: 'CASHIER', description: 'Кассир' },
-    { id: 'a0000001-0000-0000-0000-000000000004', name: 'WAITER', description: 'Официант' },
-    { id: 'a0000001-0000-0000-0000-000000000005', name: 'KITCHEN', description: 'Повар' },
-  ];
-  const { error: rolesErr } = await supabase.from('roles').upsert(roles);
-  results.roles = rolesErr ? rolesErr.message : 'ok';
+  const { Client } = await import('pg');
+  const client = new Client({ connectionString: poolerUrl, ssl: { rejectUnauthorized: false } });
 
-  const company = { id: 'b0000001-0000-0000-0000-000000000001', name: 'OpenPOS Demo', inn: '123456789', phone: '+998901234567' };
-  const { error: compErr } = await supabase.from('companies').upsert(company);
-  results.company = compErr ? compErr.message : 'ok';
+  try {
+    await client.connect();
+    const results: Record<string, string> = {};
 
-  const branch = { id: 'c0000001-0000-0000-0000-000000000001', name: 'Главный филиал', address: 'Ташкент', companyId: company.id, phone: '+998901234567', isActive: true };
-  const { error: branchErr } = await supabase.from('branches').upsert(branch);
-  results.branch = branchErr ? branchErr.message : 'ok';
+    const sql = `
+      DO $$ DECLARE r RECORD;
+      BEGIN
+        FOR r IN (SELECT tablename FROM pg_tables WHERE schemaname = 'public') LOOP
+          EXECUTE 'ALTER TABLE IF EXISTS ' || quote_ident(r.tablename) || ' DISABLE ROW LEVEL SECURITY';
+        END LOOP;
+        FOR r IN (SELECT schemaname, tablename, policyname FROM pg_policies WHERE schemaname = 'public') LOOP
+          EXECUTE 'DROP POLICY IF EXISTS ' || quote_ident(r.policyname) || ' ON ' || quote_ident(r.schemaname) || '.' || quote_ident(r.tablename);
+        END LOOP;
+      END $$;
 
-  const bcrypt = await import('bcryptjs');
-  const bcryptDefault = bcrypt.default ?? bcrypt;
-  const passwordHash = await bcryptDefault.hash('admin123', 12);
-  const adminUser = {
-    id: 'd0000001-0000-0000-0000-000000000001',
-    fullName: 'Администратор',
-    username: 'admin',
-    passwordHash,
-    isActive: true,
-    roleId: roles[0].id,
-    branchId: branch.id,
-  };
-  const { error: userErr } = await supabase.from('users').upsert(adminUser);
-  results.adminUser = userErr ? userErr.message : 'ok';
+      GRANT USAGE ON SCHEMA public TO anon;
+      GRANT ALL ON ALL TABLES IN SCHEMA public TO anon;
+      GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon;
 
-  const categories = [
-    { id: 'e0000001-0000-0000-0000-000000000001', name: 'Напитки', nameRu: 'Напитки', icon: 'cup-soda', color: '#3B82F6', sortOrder: 0, isActive: true },
-    { id: 'e0000001-0000-0000-0000-000000000002', name: 'Еда', nameRu: 'Еда', icon: 'utensils', color: '#F59E0B', sortOrder: 1, isActive: true },
-    { id: 'e0000001-0000-0000-0000-000000000003', name: 'Десерты', nameRu: 'Десерты', icon: 'cake', color: '#EC4899', sortOrder: 2, isActive: true },
-  ];
-  const { error: catErr } = await supabase.from('categories').upsert(categories);
-  results.categories = catErr ? catErr.message : 'ok';
+      INSERT INTO roles (id, name, description, "createdAt", "updatedAt") VALUES
+        ('a0000001-0000-0000-0000-000000000001', 'OWNER', 'Владелец системы', NOW(), NOW()),
+        ('a0000001-0000-0000-0000-000000000002', 'ADMINISTRATOR', 'Администратор', NOW(), NOW()),
+        ('a0000001-0000-0000-0000-000000000003', 'CASHIER', 'Кассир', NOW(), NOW()),
+        ('a0000001-0000-0000-0000-000000000004', 'WAITER', 'Официант', NOW(), NOW()),
+        ('a0000001-0000-0000-0000-000000000005', 'KITCHEN', 'Повар', NOW(), NOW())
+      ON CONFLICT (name) DO NOTHING;
 
-  const products = [
-    { id: 'f0000001-0000-0000-0000-000000000001', name: 'Чай', nameRu: 'Чай', sku: 'DRINK-001', price: 5000, categoryId: categories[0].id, isActive: true, unit: 'шт', stockQuantity: 100 },
-    { id: 'f0000001-0000-0000-0000-000000000002', name: 'Кофе', nameRu: 'Кофе', sku: 'DRINK-002', price: 15000, categoryId: categories[0].id, isActive: true, unit: 'шт', stockQuantity: 100 },
-    { id: 'f0000001-0000-0000-0000-000000000003', name: 'Плов', nameRu: 'Плов', sku: 'FOOD-001', price: 25000, categoryId: categories[1].id, isActive: true, unit: 'шт', stockQuantity: 50 },
-  ];
-  const { error: prodErr } = await supabase.from('products').upsert(products);
-  results.products = prodErr ? prodErr.message : 'ok';
+      INSERT INTO companies (id, name, inn, phone, "createdAt", "updatedAt") VALUES
+        ('b0000001-0000-0000-0000-000000000001', 'OpenPOS Demo', '123456789', '+998901234567', NOW(), NOW())
+      ON CONFLICT DO NOTHING;
 
-  return json(res, results, 200, origin);
+      INSERT INTO branches (id, name, address, "companyId", phone, "isActive", "createdAt", "updatedAt") VALUES
+        ('c0000001-0000-0000-0000-000000000001', 'Главный филиал', 'Ташкент', 'b0000001-0000-0000-0000-000000000001', '+998901234567', true, NOW(), NOW())
+      ON CONFLICT DO NOTHING;
+
+      INSERT INTO users (id, "fullName", username, "passwordHash", "isActive", "roleId", "branchId", "createdAt", "updatedAt") VALUES
+        ('d0000001-0000-0000-0000-000000000001', 'Администратор', 'admin', '$2a$12$sKWWbMAnOpUr8oSsZmqg8.pk0fVT8u3cvz.DrBrcHzVNjhuKNJIsq', true, 'a0000001-0000-0000-0000-000000000001', 'c0000001-0000-0000-0000-000000000001', NOW(), NOW())
+      ON CONFLICT DO NOTHING;
+
+      INSERT INTO categories (id, name, "nameRu", icon, color, "sortOrder", "isActive", "createdAt", "updatedAt") VALUES
+        ('e0000001-0000-0000-0000-000000000001', 'Напитки', 'Напитки', 'cup-soda', '#3B82F6', 0, true, NOW(), NOW()),
+        ('e0000001-0000-0000-0000-000000000002', 'Еда', 'Еда', 'utensils', '#F59E0B', 1, true, NOW(), NOW()),
+        ('e0000001-0000-0000-0000-000000000003', 'Десерты', 'Десерты', 'cake', '#EC4899', 2, true, NOW(), NOW())
+      ON CONFLICT DO NOTHING;
+
+      INSERT INTO products (id, name, "nameRu", "nameEn", "nameUz", sku, price, cost, "categoryId", "isActive", "createdAt", "updatedAt") VALUES
+        ('f0000001-0000-0000-0000-000000000001', 'Чай', 'Чай', 'Tea', 'Choy', 'DRINK-001', 5000, 2000, 'e0000001-0000-0000-0000-000000000001', true, NOW(), NOW()),
+        ('f0000001-0000-0000-0000-000000000002', 'Кофе', 'Кофе', 'Coffee', 'Kofe', 'DRINK-002', 15000, 5000, 'e0000001-0000-0000-0000-000000000001', true, NOW(), NOW()),
+        ('f0000001-0000-0000-0000-000000000003', 'Плов', 'Плов', 'Plov', 'Palov', 'FOOD-001', 25000, 12000, 'e0000001-0000-0000-0000-000000000002', true, NOW(), NOW()),
+        ('f0000001-0000-0000-0000-000000000004', 'Самса', 'Самса', 'Samsa', 'Samsa', 'FOOD-002', 8000, 3000, 'e0000001-0000-0000-0000-000000000002', true, NOW(), NOW()),
+        ('f0000001-0000-0000-0000-000000000005', 'Торт', 'Торт', 'Cake', 'Tort', 'DES-001', 35000, 18000, 'e0000001-0000-0000-0000-000000000003', true, NOW(), NOW())
+      ON CONFLICT DO NOTHING;
+
+      SELECT 'done' as status;
+    `;
+
+    await client.query(sql);
+    await client.query('NOTIFY pgrst, \'reload schema\'');
+    await client.end();
+
+    return json(res, { message: 'Seed completed successfully', status: 'ok' }, 200, origin);
+  } catch (e: unknown) {
+    await client.end();
+    const msg = e instanceof Error ? e.message : String(e);
+    return error(res, msg, 500, origin);
+  }
 }
