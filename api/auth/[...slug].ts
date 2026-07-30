@@ -4,11 +4,9 @@ import { supabase, json, error, corsPreflight, verifyToken } from '../lib/supaba
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'OPTIONS') return corsPreflight(res, req.headers.origin);
   const origin = req.headers.origin;
-  const slug = (req.query.slug as string[]) ?? [];
+  const raw = req.query['...slug'];
+  const slug: string[] = Array.isArray(raw) ? raw : (typeof raw === 'string' ? raw.split('/') : []);
   const action = slug[0] ?? '';
-  if (req.url?.includes('debug')) {
-    return json(res, { url: req.url, slug, action, method: req.method, query: req.query }, 200, origin);
-  }
 
   if (req.method === 'POST' && action === 'login') {
     const { username, password } = req.body;

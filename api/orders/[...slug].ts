@@ -12,7 +12,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const payload = verifyToken(req);
   if (!payload) return error(res, 'Unauthorized', 401, origin);
 
-  const slug = (req.query.slug as string[]) ?? [];
+  const slug = (req.query['...slug'] as string[] ?? []) as string[];
   const id = slug[0];
 
   if (req.method === 'GET' && id === 'open') {
