@@ -8,9 +8,9 @@ services:
     startCommand: cd apps/api && node dist/main.js
     envVars:
       - key: DATABASE_URL
-        sync: false
+        value: postgresql://postgres:hyy-JfC-g2L-s6j@db.ytanvpjxqfdxcvghmzny.supabase.co:5432/postgres
       - key: JWT_SECRET
-        sync: false
+        value: openpos-mn7k2x9p4r8t1w5q3j6y0b8n2m4vc9
       - key: PORT
         value: 3000
       - key: NODE_ENV
