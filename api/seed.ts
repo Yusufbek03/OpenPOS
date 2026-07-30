@@ -30,7 +30,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   results.branch = branchErr ? branchErr.message : 'ok';
 
   const bcrypt = await import('bcryptjs');
-  const passwordHash = await bcrypt.hash('admin123', 12);
+  const bcryptDefault = bcrypt.default ?? bcrypt;
+  const passwordHash = await bcryptDefault.hash('admin123', 12);
   const adminUser = {
     id: 'd0000001-0000-0000-0000-000000000001',
     fullName: 'Администратор',
