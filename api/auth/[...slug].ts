@@ -7,6 +7,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const raw = req.query['...slug'];
   const slug: string[] = Array.isArray(raw) ? raw : (typeof raw === 'string' ? raw.split('/') : []);
   const action = slug[0] ?? '';
+  return json(res, { raw, slug, action, method: req.method, q: Object.keys(req.query) }, 200, origin);
 
   if (req.method === 'POST' && action === 'login') {
     const { username, password } = req.body;
