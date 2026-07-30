@@ -6,7 +6,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const origin = req.headers.origin;
   const slug = (req.query.slug as string[]) ?? [];
   const action = slug[0] ?? '';
-  console.log('AUTH DEBUG:', { url: req.url, slug, action, method: req.method });
+  if (req.url?.includes('debug')) {
+    return json(res, { url: req.url, slug, action, method: req.method, query: req.query }, 200, origin);
+  }
 
   if (req.method === 'POST' && action === 'login') {
     const { username, password } = req.body;
