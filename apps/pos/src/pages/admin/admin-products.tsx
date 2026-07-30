@@ -212,7 +212,7 @@ export function AdminProducts() {
             fd.append('file', blob, 'image.jpg');
             try {
               const token = localStorage.getItem('pos_access_token');
-              const res = await fetch(`${API_BASE}/api/v1/uploads/image`, { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: fd });
+              const res = await fetch(`${API_BASE}/api/uploads/image`, { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: fd });
               const data = await res.json();
               if (data.url) setForm({ ...form, imageUrl: data.url });
             } catch { alert('Ошибка загрузки'); }
