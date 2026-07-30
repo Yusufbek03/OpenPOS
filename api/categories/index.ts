@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { supabase, json, error } from '../../lib/supabase';
+import { supabase, json, error } from '../lib/supabase';
 
 function verifyToken(req: VercelRequest): Record<string, unknown> | null {
   const auth = req.headers.authorization;
@@ -16,23 +16,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const payload = verifyToken(req);
   if (!payload) return error('Unauthorized', 401, origin);
 
-  const { id } = req.query as { id: string };
-
   switch (req.method) {
     case 'GET': {
-      const { data, error: e } = await supabase.from('orders').select('*, items:order_items(*, product:products(id, name, nameRu, price)), cashier:users!orders_cashierId_fkey(fullName), waiter:users!orders_waiterId_fkey(fullName)').eq('id', id).single();
-      if (e || !data) return error('Order not found', 404, origin);
-      return json(data, 200, origin);
-    }
-    case 'PATCH': {
-      const { data, error: e } = await supabase.from('orders').update(req.body).eq('id', id).select().single();
+      const { data, error: e } = await supabase.from('categories').select('*').is('deletedAt', null).order('sortOrder');
       if (e) return error(e.message, 500, origin);
       return json(data, 200, origin);
     }
-    case 'DELETE': {
-      const { error: e } = await supabase.from('orders').update({ status: 'CANCELLED', deletedAt: new Date().toISOString() }).eq('id', id);
+    case 'POST': {
+      const { data, error: e } = await supabase.from('categories').insert(req.body).select('*').single();
       if (e) return error(e.message, 500, origin);
-      return json({ message: 'Cancelled' }, 200, origin);
+      return json(data, 201, origin);
     }
     default:
       return error('Method not allowed', 405, origin);

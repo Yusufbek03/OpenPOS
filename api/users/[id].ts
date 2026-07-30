@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { supabase, json, error } from '../../lib/supabase';
+import { supabase, json, error } from '../lib/supabase';
 
 function verifyToken(req: VercelRequest): Record<string, unknown> | null {
   const auth = req.headers.authorization;
@@ -19,18 +19,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const { id } = req.query as { id: string };
 
   switch (req.method) {
-    case 'GET': {
-      const { data, error: e } = await supabase.from('categories').select('*').eq('id', id).single();
-      if (e || !data) return error('Category not found', 404, origin);
-      return json(data, 200, origin);
-    }
     case 'PATCH': {
-      const { data, error: e } = await supabase.from('categories').update(req.body).eq('id', id).select('*').single();
+      const { data, error: e } = await supabase.from('users').update(req.body).eq('id', id).select('id, fullName, username, role:roles(name)').single();
       if (e) return error(e.message, 500, origin);
       return json(data, 200, origin);
     }
     case 'DELETE': {
-      const { error: e } = await supabase.from('categories').update({ deletedAt: new Date().toISOString() }).eq('id', id);
+      if (payload.role !== 'OWNER') return error('Only OWNER can delete users', 403, origin);
+      const { error: e } = await supabase.from('users').update({ deletedAt: new Date().toISOString(), isActive: false }).eq('id', id);
       if (e) return error(e.message, 500, origin);
       return json({ message: 'Deleted' }, 200, origin);
     }

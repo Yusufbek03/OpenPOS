@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { supabase, json, error } from '../../lib/supabase';
+import { supabase, json, error } from '../lib/supabase';
 
 function verifyToken(req: VercelRequest): Record<string, unknown> | null {
   const auth = req.headers.authorization;
@@ -20,17 +20,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   switch (req.method) {
     case 'GET': {
-      const { data, error: e } = await supabase.from('products').select('*, category:categories(*)').eq('id', id).single();
-      if (e || !data) return error('Product not found', 404, origin);
+      const { data, error: e } = await supabase.from('categories').select('*').eq('id', id).single();
+      if (e || !data) return error('Category not found', 404, origin);
       return json(data, 200, origin);
     }
     case 'PATCH': {
-      const { data, error: e } = await supabase.from('products').update(req.body).eq('id', id).select('*, category:categories(*)').single();
+      const { data, error: e } = await supabase.from('categories').update(req.body).eq('id', id).select('*').single();
       if (e) return error(e.message, 500, origin);
       return json(data, 200, origin);
     }
     case 'DELETE': {
-      const { error: e } = await supabase.from('products').update({ deletedAt: new Date().toISOString() }).eq('id', id);
+      const { error: e } = await supabase.from('categories').update({ deletedAt: new Date().toISOString() }).eq('id', id);
       if (e) return error(e.message, 500, origin);
       return json({ message: 'Deleted' }, 200, origin);
     }

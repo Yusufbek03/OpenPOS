@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { supabase, json, error } from '../../lib/supabase';
+import { supabase, json, error } from '../lib/supabase';
 
 function verifyToken(req: VercelRequest): Record<string, unknown> | null {
   const auth = req.headers.authorization;

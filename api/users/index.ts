@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { supabase, json, error } from '../../lib/supabase';
+import { supabase, json, error } from '../lib/supabase';
 
 function verifyToken(req: VercelRequest): Record<string, unknown> | null {
   const auth = req.headers.authorization;
@@ -15,31 +15,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const origin = req.headers.origin;
   const payload = verifyToken(req);
   if (!payload) return error('Unauthorized', 401, origin);
+  if (!['OWNER', 'ADMINISTRATOR'].includes(payload.role as string)) return error('Forbidden', 403, origin);
 
   switch (req.method) {
     case 'GET': {
-      const { page = '1', limit = '50', search, categoryId } = req.query;
+      const { page = '1', limit = '50', search } = req.query;
       const p = Math.max(1, Number(page));
       const l = Math.min(200, Math.max(1, Number(limit)));
       const offset = (p - 1) * l;
 
-      let query = supabase.from('products').select('*, category:categories(id, name, nameRu, icon, color, imageUrl)', { count: 'exact' }).is('deletedAt', null);
+      let query = supabase.from('users').select('id, fullName, username, isActive, roleId, branchId, lastLoginAt, pinCode, role:roles(id, name)', { count: 'exact' }).is('deletedAt', null);
 
-      if (search) {
-        const s = String(search);
-        query = query.or(`name.ilike.%${s}%,nameRu.ilike.%${s}%,sku.ilike.%${s}%,barcode.ilike.%${s}%`);
-      }
-      if (categoryId) query = query.eq('categoryId', categoryId);
+      if (search) query = query.or(`fullName.ilike.%${search}%,username.ilike.%${search}%`);
 
-      query = query.order('createdAt', { ascending: false }).range(offset, offset + l - 1);
+      query = query.order('fullName').range(offset, offset + l - 1);
       const { data, error: e, count } = await query;
       if (e) return error(e.message, 500, origin);
       return json({ items: data, total: count, page: p, limit: l }, 200, origin);
     }
     case 'POST': {
-      const body = req.body;
-      if (!body.sku) body.sku = `SKU-${Date.now()}`;
-      const { data, error: e } = await supabase.from('products').insert(body).select('*, category:categories(*)').single();
+      const bcrypt = await import('bcryptjs');
+      const { fullName, username, password, roleId, branchId } = req.body;
+      const hash = await bcrypt.hash(password, 12);
+      const { data, error: e } = await supabase.from('users').insert({ fullName, username, passwordHash: hash, roleId, branchId }).select('id, fullName, username, role:roles(name)').single();
       if (e) return error(e.message, 500, origin);
       return json(data, 201, origin);
     }
