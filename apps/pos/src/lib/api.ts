@@ -2,7 +2,7 @@ import axios from 'axios';
 import { API_BASE } from './api-config';
 
 export const api = axios.create({
-  baseURL: `${API_BASE}/api/v1`,
+  baseURL: `${API_BASE}/api`,
   timeout: 15_000,
   headers: { 'Content-Type': 'application/json' },
 });
@@ -25,7 +25,7 @@ api.interceptors.response.use(
       const refreshToken = localStorage.getItem('pos_refresh_token');
       if (refreshToken) {
         try {
-          const { data } = await axios.post(`${API_BASE}/api/v1/auth/refresh`, { refreshToken });
+          const { data } = await axios.post(`${API_BASE}/api/auth/refresh`, { refreshToken });
           localStorage.setItem('pos_access_token', data.accessToken);
           localStorage.setItem('pos_refresh_token', data.refreshToken);
           originalRequest.headers.Authorization = `Bearer ${data.accessToken}`;

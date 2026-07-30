@@ -5,6 +5,13 @@
   "outputDirectory": "apps/pos/dist",
   "framework": "vite",
   "rewrites": [
-    { "source": "/((?!assets|icons|favicon|favicon\\.png|manifest\\.json|sw\\.js|robots\\.txt).*)", "destination": "/index.html" }
+    { "source": "/api/health", "destination": "/api/health.ts" },
+    { "source": "/api/auth/(.*)", "destination": "/api/auth/$1.ts" },
+    { "source": "/api/products/(.*)", "destination": "/api/products/$1.ts" },
+    { "source": "/api/categories/(.*)", "destination": "/api/categories/$1.ts" },
+    { "source": "/api/orders/(.*)", "destination": "/api/orders/$1.ts" },
+    { "source": "/api/users/(.*)", "destination": "/api/users/$1.ts" },
+    { "source": "/api/uploads/(.*)", "destination": "/api/uploads/$1.ts" },
+    { "source": "/((?!assets|icons|favicon|favicon\\.png|manifest\\.json|sw\\.js|robots\\.txt|api).*)", "destination": "/index.html" }
   ]
 }
