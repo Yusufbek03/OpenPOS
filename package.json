@@ -38,6 +38,9 @@
     "docker:down": "docker compose -f docker/docker-compose.yml down",
     "docker:logs": "docker compose -f docker/docker-compose.yml logs -f"
   },
+  "pnpm": {
+    "onlyBuiltDependencies": ["@scarf/scarf", "esbuild", "@prisma/engines", "@prisma/client", "prisma", "@nestjs/core"]
+  },
   "devDependencies": {
     "@commitlint/cli": "^19.7.1",
     "@commitlint/config-conventional": "^19.7.1",
