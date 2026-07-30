@@ -5,7 +5,7 @@ services:
     plan: free
     region: oregon
     buildCommand: corepack enable && pnpm install --frozen-lockfile && cd packages/database && npx prisma generate && npx prisma migrate deploy
-    startCommand: cd apps/api && npx tsx src/main.ts
+    startCommand: cd apps/api && pnpm exec tsx src/main.ts
     envVars:
       - key: DATABASE_URL
         value: postgresql://postgres.ytanvpjxqfdxcvghmzny:hyy-JfC-g2L-s6j@aws-0-ap-northeast-1.pooler.supabase.com:6543/postgres
