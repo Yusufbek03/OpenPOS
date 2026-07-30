@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { supabase, json, error, corsPreflight, verifyToken } from '../lib/supabase';
+import { supabase, json, error, corsPreflight, verifyToken } from '../../api-shared/supabase';
 
 function generateOrderNumber(): string {
   const now = new Date();
