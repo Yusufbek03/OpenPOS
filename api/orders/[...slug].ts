@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { supabase, json, error, corsPreflight, verifyToken } from './lib/supabase';
+import { supabase, json, error, corsPreflight, verifyToken } from '../lib/supabase';
 
 function generateOrderNumber(): string {
   const now = new Date();
@@ -12,9 +12,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const payload = verifyToken(req);
   if (!payload) return error(res, 'Unauthorized', 401, origin);
 
-  const url = req.url ?? '';
-  const idMatch = url.match(/\/api\/orders\/([a-f0-9-]+)/);
-  const id = idMatch?.[1];
+  const slug = (req.query.slug as string[]) ?? [];
+  const id = slug[0];
+
+  if (req.method === 'GET' && id === 'open') {
+    const { count } = await supabase.from('orders').select('*', { count: 'exact', head: true }).in('status', ['PENDING', 'SENT_TO_KITCHEN', 'PREPARING', 'READY']);
+    return json(res, { count: count ?? 0 }, 200, origin);
+  }
 
   if (req.method === 'GET' && id) {
     const { data, error: e } = await supabase.from('orders').select('*, items:order_items(*, product:products(id, name, nameRu, price)), cashier:users!orders_cashierId_fkey(fullName), waiter:users!orders_waiterId_fkey(fullName)').eq('id', id).single();
@@ -30,11 +34,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const { error: e } = await supabase.from('orders').update({ status: 'CANCELLED', deletedAt: new Date().toISOString() }).eq('id', id);
     if (e) return error(res, e.message, 500, origin);
     return json(res, { message: 'Cancelled' }, 200, origin);
-  }
-
-  if (url.endsWith('/open') && req.method === 'GET') {
-    const { count } = await supabase.from('orders').select('*', { count: 'exact', head: true }).in('status', ['PENDING', 'SENT_TO_KITCHEN', 'PREPARING', 'READY']);
-    return json(res, { count: count ?? 0 }, 200, origin);
   }
 
   if (req.method === 'GET') {

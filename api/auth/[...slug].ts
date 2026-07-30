@@ -1,16 +1,13 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { supabase, json, error, corsPreflight, verifyToken } from './lib/supabase';
+import { supabase, json, error, corsPreflight, verifyToken } from '../lib/supabase';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'OPTIONS') return corsPreflight(res, req.headers.origin);
   const origin = req.headers.origin;
-  const url = req.url ?? '';
-  const method = req.method;
+  const slug = (req.query.slug as string[]) ?? [];
+  const action = slug[0] ?? '';
 
-  const segments = url.replace('/api/auth/', '').split('/').filter(Boolean);
-  const action = segments[0] ?? '';
-
-  if (method === 'POST' && action === 'login') {
+  if (req.method === 'POST' && action === 'login') {
     const { username, password } = req.body;
     if (!username || !password) return error(res, 'username и password обязательны', 400, origin);
 
@@ -41,7 +38,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return json(res, { accessToken, refreshToken, expiresIn: '15m', user: { id: user.id, fullName: user.fullName, username: user.username, role: roleName } }, 200, origin);
   }
 
-  if (method === 'POST' && action === 'supabase-login') {
+  if (req.method === 'POST' && action === 'supabase-login') {
     const { email, fullName, phone, supabaseId } = req.body;
     if (!email || !fullName || !supabaseId) return error(res, 'email, fullName, supabaseId обязательны', 400, origin);
     const username = email || phone || supabaseId;
@@ -76,7 +73,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return json(res, { accessToken, refreshToken, expiresIn: '15m', user: { id: user.id, fullName: user.fullName, username: user.username, role: roleName } }, 200, origin);
   }
 
-  if (method === 'POST' && action === 'refresh') {
+  if (req.method === 'POST' && action === 'refresh') {
     const { refreshToken: rt } = req.body;
     if (!rt) return error(res, 'refreshToken обязателен', 400, origin);
     const jwt = await import('jsonwebtoken');
@@ -95,7 +92,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return json(res, { accessToken: newAccessToken, refreshToken: newRefreshToken, expiresIn: '15m' }, 200, origin);
   }
 
-  if (method === 'POST' && action === 'logout') {
+  if (req.method === 'POST' && action === 'logout') {
     const payload = verifyToken(req);
     if (!payload) return error(res, 'Unauthorized', 401, origin);
     await supabase.from('sessions').update({ isActive: false }).eq('id', payload.sessionId);
@@ -103,7 +100,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return json(res, { message: 'Logged out successfully' }, 200, origin);
   }
 
-  if (method === 'GET' && action === 'me') {
+  if (req.method === 'GET' && action === 'me') {
     const payload = verifyToken(req);
     if (!payload) return error(res, 'Unauthorized', 401, origin);
     const { data: user } = await supabase.from('users').select('id, fullName, username, role:roles(name), branchId, pinCode').eq('id', payload.sub).single();
@@ -112,7 +109,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return json(res, { id: user.id, fullName: user.fullName, username: user.username, role: roleName, branchId: user.branchId, hasPinCode: !!user.pinCode }, 200, origin);
   }
 
-  if (method === 'POST' && action === 'verify-pin') {
+  if (req.method === 'POST' && action === 'verify-pin') {
     const { userId, pin } = req.body;
     const { data: user } = await supabase.from('users').select('*').eq('id', userId).single();
     if (!user) return error(res, 'Пользователь не найден', 404, origin);
@@ -121,7 +118,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return json(res, { message: 'PIN верный', valid: true }, 200, origin);
   }
 
-  if (method === 'GET' && action === 'users-for-pin') {
+  if (req.method === 'GET' && action === 'users-for-pin') {
     const payload = verifyToken(req);
     if (!payload) return error(res, 'Unauthorized', 401, origin);
     const { data: users } = await supabase.from('users').select('id, fullName, username, pinCode, role:roles(name)').is('deletedAt', null).eq('isActive', true).order('fullName');

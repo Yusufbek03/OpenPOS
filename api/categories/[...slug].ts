@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { supabase, json, error, corsPreflight, verifyToken } from './lib/supabase';
+import { supabase, json, error, corsPreflight, verifyToken } from '../lib/supabase';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'OPTIONS') return corsPreflight(res, req.headers.origin);
@@ -7,9 +7,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const payload = verifyToken(req);
   if (!payload) return error(res, 'Unauthorized', 401, origin);
 
-  const url = req.url ?? '';
-  const idMatch = url.match(/\/api\/categories\/([a-f0-9-]+)/);
-  const id = idMatch?.[1];
+  const slug = (req.query.slug as string[]) ?? [];
+  const id = slug[0];
 
   if (req.method === 'GET' && id) {
     const { data, error: e } = await supabase.from('categories').select('*').eq('id', id).single();
