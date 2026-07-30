@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { supabase, json, error, corsPreflight, verifyToken } from '../lib/supabase';
+import { supabase, json, error, corsPreflight, verifyToken } from './lib/supabase';
 
 const ENTITY_TABLES: Record<string, string> = {
   customers: 'customers',
@@ -26,42 +26,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const payload = verifyToken(req);
   if (!payload) return error(res, 'Unauthorized', 401, origin);
 
-  const raw = req.query['...slug'];
-  const slug: string[] = Array.isArray(raw) ? raw : (typeof raw === 'string' ? raw.split('/') : []);
+  const raw = (req.query._path as string) || '';
+  const path = decodeURIComponent(raw);
+  const slug = path ? path.split('/').filter(Boolean) : [];
   const entityPath = slug.join('/');
   const id = slug[slug.length - 1];
 
-  if (entityPath === 'reports/dashboard') {
-    return handleDashboard(req, res, origin);
-  }
-  if (entityPath === 'reports/clear-all') {
-    return handleClearAll(res, origin);
-  }
-  if (entityPath === 'audit') {
-    return handleAudit(req, res, origin);
-  }
-  if (entityPath === 'register-ops') {
-    return handleRegisterOps(req, res, origin, payload);
-  }
-  if (entityPath === 'inventory') {
-    return handleInventory(req, res, origin);
-  }
-  if (entityPath === 'inventory/history') {
-    return handleInventoryHistory(req, res, origin);
-  }
-  if (entityPath === 'inventory/receive') {
-    return handleInventoryReceive(req, res, origin);
-  }
-  if (entityPath === 'inventory/writeoff') {
-    return handleInventoryWriteoff(req, res, origin);
-  }
-  if (entityPath === 'customers/stats') {
-    return handleCustomerStats(res, origin);
-  }
+  if (!path) return json(res, { message: 'Admin API v1.0' }, 200, origin);
+
+  if (entityPath === 'reports/dashboard') return handleDashboard(req, res, origin);
+  if (entityPath === 'reports/clear-all') return handleClearAll(res, origin);
+  if (entityPath === 'audit') return handleAudit(req, res, origin);
+  if (entityPath === 'register-ops') return handleRegisterOps(req, res, origin, payload);
+  if (entityPath === 'inventory') return handleInventory(req, res, origin);
+  if (entityPath === 'inventory/history') return handleInventoryHistory(req, res, origin);
+  if (entityPath === 'inventory/receive') return handleInventoryReceive(req, res, origin);
+  if (entityPath === 'inventory/writeoff') return handleInventoryWriteoff(req, res, origin);
+  if (entityPath === 'customers/stats') return handleCustomerStats(res, origin);
   if (entityPath.match(/^customers\/[^/]+\/bonus\/(accrue|writeoff)$/)) {
-    const customerId = slug[1];
-    const bonusType = slug[3] as 'accrue' | 'writeoff';
-    return handleCustomerBonus(req, res, origin, customerId, bonusType);
+    return handleCustomerBonus(req, res, origin, slug[1], slug[3] as 'accrue' | 'writeoff');
   }
   if (entityPath.match(/^printers\/[^/]+\/test$/)) {
     return handlePrinterTest(res, origin, slug[1]);
@@ -69,12 +52,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (entityPath.match(/^tables\/[^/]+\/status$/)) {
     return handleTableStatus(req, res, origin, slug[1]);
   }
-  if (entityPath === 'tables/zones') {
-    return handleTableZones(res, origin);
-  }
-  if (entityPath === 'tables/stats') {
-    return handleTableStats(res, origin);
-  }
+  if (entityPath === 'tables/zones') return handleTableZones(res, origin);
+  if (entityPath === 'tables/stats') return handleTableStats(res, origin);
 
   const table = ENTITY_TABLES[entityPath];
   if (!table) return error(res, `Unknown entity: ${entityPath}`, 400, origin);
@@ -189,7 +168,6 @@ async function handleDashboard(req: VercelRequest, res: VercelResponse, origin: 
     .is('deletedAt', null);
 
   const allOrdersList = (allOrders || []) as Record<string, unknown>[];
-
   const dayOrders = allOrdersList.filter((o) => {
     const d = new Date(o.createdAt as string);
     return d >= startOfDay && d <= endOfDay;
@@ -220,13 +198,8 @@ async function handleDashboard(req: VercelRequest, res: VercelResponse, origin: 
     .slice(0, 20);
 
   return json(res, {
-    totalOrders: allOrdersList.length,
-    todayOrders: dayOrders.length,
-    totalRevenue,
-    todayRevenue: dayRevenue,
-    topProducts,
-    activeOrders,
-    lowStock: [],
+    totalOrders: allOrdersList.length, todayOrders: dayOrders.length,
+    totalRevenue, todayRevenue: dayRevenue, topProducts, activeOrders, lowStock: [],
   }, 200, origin);
 }
 
@@ -250,37 +223,26 @@ async function handleAudit(req: VercelRequest, res: VercelResponse, origin: stri
   if (entity) query = query.eq('entity', entity);
   if (action) query = query.eq('action', action);
   if (userId) query = query.eq('userId', userId);
-
   query = query.range(offset, offset + l - 1);
 
   const { data, error: e, count } = await query;
   if (e) return error(res, e.message, 500, origin);
-
   return json(res, { logs: data, items: data, meta: { page: p, limit: l, total: count, pages: Math.ceil((count || 0) / l) } }, 200, origin);
 }
 
 async function handleRegisterOps(req: VercelRequest, res: VercelResponse, origin: string | undefined, payload: Record<string, unknown>) {
   if (req.method === 'GET') {
-    const { data, error: e } = await supabase
-      .from('register_ops')
-      .select('*, user:users!register_ops_userId_fkey(fullName)')
-      .order('createdAt', { ascending: false });
+    const { data, error: e } = await supabase.from('register_ops').select('*, user:users!register_ops_userId_fkey(fullName)').order('createdAt', { ascending: false });
     if (e) return error(res, e.message, 500, origin);
     return json(res, { ops: data, items: data }, 200, origin);
   }
-
   if (req.method === 'POST') {
     const { type, amount, reason } = req.body;
     if (!type || !amount) return error(res, 'type and amount required', 400, origin);
-    const { data, error: e } = await supabase
-      .from('register_ops')
-      .insert({ type, amount, reason: reason || '', userId: payload.sub })
-      .select('*, user:users!register_ops_userId_fkey(fullName)')
-      .single();
+    const { data, error: e } = await supabase.from('register_ops').insert({ type, amount, reason: reason || '', userId: payload.sub }).select('*, user:users!register_ops_userId_fkey(fullName)').single();
     if (e) return error(res, e.message, 500, origin);
     return json(res, data, 201, origin);
   }
-
   return error(res, 'Method not allowed', 405, origin);
 }
 
@@ -290,15 +252,8 @@ async function handleInventory(req: VercelRequest, res: VercelResponse, origin: 
   const l = Math.min(500, Math.max(1, Number(limit)));
   const offset = (p - 1) * l;
 
-  let query = supabase
-    .from('inventory_items')
-    .select('*, product:products(id, name, nameRu, sku)', { count: 'exact' })
-    .is('deletedAt', null);
-
-  if (lowStock === 'true' || lowStock === '1') {
-    query = query.filter('quantity', 'lte', 'minStock');
-  }
-
+  let query = supabase.from('inventory_items').select('*, product:products(id, name, nameRu, sku)', { count: 'exact' }).is('deletedAt', null);
+  if (lowStock === 'true' || lowStock === '1') query = query.filter('quantity', 'lte', 'minStock');
   query = query.order('createdAt', { ascending: false }).range(offset, offset + l - 1);
 
   const { data, error: e, count } = await query;
@@ -309,13 +264,7 @@ async function handleInventory(req: VercelRequest, res: VercelResponse, origin: 
 async function handleInventoryHistory(req: VercelRequest, res: VercelResponse, origin: string | undefined) {
   const { limit = '100' } = req.query;
   const l = Math.min(500, Math.max(1, Number(limit)));
-
-  const { data, error: e } = await supabase
-    .from('inventory_history')
-    .select('*, product:products(id, name, sku), user:users(id, fullName)')
-    .order('createdAt', { ascending: false })
-    .limit(l);
-
+  const { data, error: e } = await supabase.from('inventory_history').select('*, product:products(id, name, sku), user:users(id, fullName)').order('createdAt', { ascending: false }).limit(l);
   if (e) return error(res, e.message, 500, origin);
   return json(res, { items: data, history: data }, 200, origin);
 }
@@ -324,18 +273,13 @@ async function handleInventoryReceive(req: VercelRequest, res: VercelResponse, o
   if (req.method !== 'POST') return error(res, 'POST only', 405, origin);
   const { productId, quantity, notes } = req.body;
   if (!productId || !quantity) return error(res, 'productId and quantity required', 400, origin);
-
   const { data: existing } = await supabase.from('inventory_items').select('id, quantity').eq('productId', productId).is('deletedAt', null).single();
-
   if (existing) {
-    const newQty = Number(existing.quantity) + Number(quantity);
-    await supabase.from('inventory_items').update({ quantity: newQty, lastReceivedAt: new Date().toISOString() }).eq('id', existing.id);
+    await supabase.from('inventory_items').update({ quantity: Number(existing.quantity) + Number(quantity), lastReceivedAt: new Date().toISOString() }).eq('id', existing.id);
   } else {
     await supabase.from('inventory_items').insert({ productId, quantity, minStock: 0 });
   }
-
   await supabase.from('inventory_history').insert({ productId, type: 'RECEIVE', quantity, notes: notes || '' });
-
   return json(res, { message: 'Inventory received', productId, quantity }, 200, origin);
 }
 
@@ -343,34 +287,22 @@ async function handleInventoryWriteoff(req: VercelRequest, res: VercelResponse, 
   if (req.method !== 'POST') return error(res, 'POST only', 405, origin);
   const { productId, quantity, reason, notes } = req.body;
   if (!productId || !quantity) return error(res, 'productId and quantity required', 400, origin);
-
   const { data: existing } = await supabase.from('inventory_items').select('id, quantity').eq('productId', productId).is('deletedAt', null).single();
   if (!existing) return error(res, 'Product not found in inventory', 404, origin);
-
   const newQty = Number(existing.quantity) - Number(quantity);
   if (newQty < 0) return error(res, 'Insufficient inventory', 400, origin);
-
   await supabase.from('inventory_items').update({ quantity: newQty }).eq('id', existing.id);
   await supabase.from('inventory_history').insert({ productId, type: 'WRITEOFF', quantity: -Number(quantity), reason: reason || '', notes: notes || '' });
-
   return json(res, { message: 'Inventory written off', productId, quantity }, 200, origin);
 }
 
 async function handleCustomerStats(res: VercelResponse, origin: string | undefined) {
-  const { data: customers } = await supabase
-    .from('customers')
-    .select('id, status, bonusBalance')
-    .is('deletedAt', null);
-
+  const { data: customers } = await supabase.from('customers').select('id, status, bonusBalance').is('deletedAt', null);
   const list = (customers || []) as Array<{ id: string; status: string; bonusBalance: string | number }>;
   const total = list.length;
   const byStatus: Record<string, number> = {};
   let totalBonusBalance = 0;
-  for (const c of list) {
-    byStatus[c.status] = (byStatus[c.status] || 0) + 1;
-    totalBonusBalance += Number(c.bonusBalance || 0);
-  }
-
+  for (const c of list) { byStatus[c.status] = (byStatus[c.status] || 0) + 1; totalBonusBalance += Number(c.bonusBalance || 0); }
   return json(res, { total, byStatus, totalBonusBalance }, 200, origin);
 }
 
@@ -378,17 +310,13 @@ async function handleCustomerBonus(req: VercelRequest, res: VercelResponse, orig
   if (req.method !== 'POST') return error(res, 'POST only', 405, origin);
   const { amount } = req.body;
   if (!amount || amount <= 0) return error(res, 'amount required', 400, origin);
-
   const { data: customer, error: e1 } = await supabase.from('customers').select('bonusBalance').eq('id', id).single();
   if (e1 || !customer) return error(res, 'Customer not found', 404, origin);
-
   const currentBalance = Number(customer.bonusBalance || 0);
   const newBalance = type === 'accrue' ? currentBalance + Number(amount) : currentBalance - Number(amount);
   if (newBalance < 0) return error(res, 'Insufficient bonus balance', 400, origin);
-
   const { data, error: e } = await supabase.from('customers').update({ bonusBalance: newBalance }).eq('id', id).select('*').single();
   if (e) return error(res, e.message, 500, origin);
-
   return json(res, data, 200, origin);
 }
 
@@ -404,7 +332,6 @@ async function handleTableStatus(req: VercelRequest, res: VercelResponse, origin
   const updateData: Record<string, unknown> = {};
   if (status) updateData.status = status;
   if (waiterId !== undefined) updateData.waiterId = waiterId;
-
   const { data, error: e } = await supabase.from('restaurant_tables').update(updateData).eq('id', id).select('*').single();
   if (e) return error(res, e.message, 500, origin);
   return json(res, data, 200, origin);
@@ -421,8 +348,6 @@ async function handleTableStats(res: VercelResponse, origin: string | undefined)
   const { data, error: e } = await supabase.from('restaurant_tables').select('status').is('deletedAt', null);
   if (e) return error(res, e.message, 500, origin);
   const stats: Record<string, number> = {};
-  for (const row of (data || []) as Array<{ status: string }>) {
-    stats[row.status] = (stats[row.status] || 0) + 1;
-  }
+  for (const row of (data || []) as Array<{ status: string }>) { stats[row.status] = (stats[row.status] || 0) + 1; }
   return json(res, stats, 200, origin);
 }
