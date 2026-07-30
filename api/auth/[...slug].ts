@@ -17,7 +17,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (findError || !user) return error(res, 'Неверное имя пользователя или пароль', 401, origin);
     if (!user.isActive) return error(res, 'Аккаунт деактивирован', 401, origin);
 
-    const bcrypt = await import('bcryptjs');
+    const bcryptModule = await import('bcryptjs');
+    const bcrypt = bcryptModule.default ?? bcryptModule;
     const valid = await bcrypt.compare(password, user.passwordHash);
     if (!valid) return error(res, 'Неверное имя пользователя или пароль', 401, origin);
 
@@ -54,7 +55,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const role = (count === 0 && ownerRole) ? ownerRole : cashierRole;
       if (!role) return error(res, 'Роль не найдена', 500, origin);
 
-      const bcrypt = await import('bcryptjs');
+      const bcryptModule = await import('bcryptjs');
+      const bcrypt = bcryptModule.default ?? bcryptModule;
       const { data: newUser } = await supabase.from('users').insert({
         fullName, username, passwordHash: await bcrypt.hash(supabaseId, 12), roleId: role.id, branchId: branch?.id,
       }).select('*, role:roles(*)').single();

@@ -36,7 +36,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return json(res, { items: data, total: count, page: p, limit: l }, 200, origin);
   }
   if (req.method === 'POST') {
-    const bcrypt = await import('bcryptjs');
+    const bcryptModule = await import('bcryptjs');
+    const bcrypt = bcryptModule.default ?? bcryptModule;
     const { fullName, username, password, roleId, branchId } = req.body;
     const hash = await bcrypt.hash(password, 12);
     const { data, error: e } = await supabase.from('users').insert({ fullName, username, passwordHash: hash, roleId, branchId }).select('id, fullName, username, role:roles(name)').single();
