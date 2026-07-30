@@ -34,7 +34,7 @@ export function AdminInventory() {
   const { data: inventoryData, isLoading } = useQuery({
     queryKey: ['admin-inventory', search, showLowStock],
     queryFn: async () => {
-      const { data } = await api.get('/inventory', { params: { limit: 200, lowStock: showLowStock || undefined } });
+      const { data } = await api.get('/admin/inventory', { params: { limit: 200, lowStock: showLowStock || undefined } });
       return data;
     },
   });
@@ -42,7 +42,7 @@ export function AdminInventory() {
   const { data: historyData } = useQuery({
     queryKey: ['admin-inventory-history'],
     queryFn: async () => {
-      const { data } = await api.get('/inventory/history', { params: { limit: 100 } });
+      const { data } = await api.get('/admin/inventory/history', { params: { limit: 100 } });
       return data;
     },
     enabled: tab === 'history',
@@ -58,7 +58,7 @@ export function AdminInventory() {
 
   const receiveMutation = useMutation({
     mutationFn: async (formData: typeof receiveForm) => {
-      return api.post('/inventory/receive', {
+      return api.post('/admin/inventory/receive', {
         productId: formData.productId,
         quantity: Number(formData.quantity),
         notes: formData.notes || undefined,
@@ -73,7 +73,7 @@ export function AdminInventory() {
 
   const writeoffMutation = useMutation({
     mutationFn: async (formData: typeof writeoffForm) => {
-      return api.post('/inventory/writeoff', {
+      return api.post('/admin/inventory/writeoff', {
         productId: formData.productId,
         quantity: Number(formData.quantity),
         reason: formData.reason,

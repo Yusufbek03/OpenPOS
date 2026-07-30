@@ -35,7 +35,7 @@ export function AdminCashReport() {
   const { data: dashboard } = useQuery({
     queryKey: ['cash-dashboard', selectedDate],
     queryFn: async () => {
-      const { data } = await api.get('/reports/dashboard', { params: { from: selectedDate, to: selectedDate } });
+      const { data } = await api.get('/admin/reports/dashboard', { params: { from: selectedDate, to: selectedDate } });
       return data as DashboardData;
     },
   });
@@ -44,7 +44,7 @@ export function AdminCashReport() {
     queryKey: ['register-ops', selectedDate],
     queryFn: async () => {
       try {
-        const { data } = await api.get('/register-ops');
+        const { data } = await api.get('/admin/register-ops');
         const all = data as RegisterOp[];
         return all.filter((op) => op.createdAt.slice(0, 10) === selectedDate);
       } catch {
@@ -79,7 +79,7 @@ export function AdminCashReport() {
   const createOp = useMutation({
     mutationFn: async (f: typeof opForm) => {
       try {
-        return await api.post('/register-ops', { ...f, amount: Number(f.amount) });
+        return await api.post('/admin/register-ops', { ...f, amount: Number(f.amount) });
       } catch {
         return { data: { id: 'local', ...f, amount: Number(f.amount), createdAt: new Date().toISOString(), user: { fullName: 'Кассир' } } };
       }

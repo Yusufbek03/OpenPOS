@@ -55,7 +55,7 @@ export function AdminProducts() {
   const { data: stations = [] } = useQuery({
     queryKey: ['admin-stations'],
     queryFn: async () => {
-      const { data } = await api.get('/kitchen/stations');
+      const { data } = await api.get('/admin/kitchen/stations');
       return (data || []) as Station[];
     },
   });

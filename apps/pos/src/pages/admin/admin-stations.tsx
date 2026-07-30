@@ -39,7 +39,7 @@ export function AdminStations() {
   const { data: stations = [], isLoading } = useQuery({
     queryKey: ['admin-stations'],
     queryFn: async () => {
-      const { data } = await api.get('/kitchen/stations');
+      const { data } = await api.get('/admin/kitchen/stations');
       return (data || []) as Station[];
     },
   });
@@ -47,7 +47,7 @@ export function AdminStations() {
   const { data: printers = [] } = useQuery({
     queryKey: ['admin-printers'],
     queryFn: async () => {
-      const { data } = await api.get('/printers', { params: { department: 'KITCHEN' } });
+      const { data } = await api.get('/admin/printers', { params: { department: 'KITCHEN' } });
       return (data || []) as Printer[];
     },
   });
@@ -60,14 +60,14 @@ export function AdminStations() {
         sortOrder: Number(formData.sortOrder),
         isActive: String(formData.isActive),
       };
-      if (editing) return api.patch(`/kitchen/stations/${editing.id}`, payload);
-      return api.post('/kitchen/stations', payload);
+      if (editing) return api.patch(`/admin/kitchen/stations/${editing.id}`, payload);
+      return api.post('/admin/kitchen/stations', payload);
     },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['admin-stations'] }); setShowForm(false); setEditing(null); resetForm(); },
   });
 
   const deleteStation = useMutation({
-    mutationFn: (id: string) => api.delete(`/kitchen/stations/${id}`),
+    mutationFn: (id: string) => api.delete(`/admin/kitchen/stations/${id}`),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin-stations'] }),
   });
 

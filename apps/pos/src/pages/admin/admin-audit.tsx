@@ -30,7 +30,7 @@ export function AdminAuditLog() {
   const { data, isLoading } = useQuery({
     queryKey: ['admin-audit', entityFilter, page],
     queryFn: async () => {
-      const { data } = await api.get('/audit', { params: { limit: 50, page, entity: entityFilter || undefined } });
+      const { data } = await api.get('/admin/audit', { params: { limit: 50, page, entity: entityFilter || undefined } });
       return data;
     },
   });

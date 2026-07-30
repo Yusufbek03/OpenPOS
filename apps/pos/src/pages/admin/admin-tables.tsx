@@ -30,26 +30,26 @@ export function AdminTables() {
 
   const { data: tables = [], isLoading } = useQuery({
     queryKey: ['admin-tables'],
-    queryFn: async () => { const { data } = await api.get('/tables'); return data as RestaurantTable[]; },
+    queryFn: async () => { const { data } = await api.get('/admin/tables'); return data as RestaurantTable[]; },
   });
 
   const saveMutation = useMutation({
     mutationFn: async () => {
       const payload: Record<string, unknown> = { ...form, zone: form.zone || undefined };
-      if (editing) return api.patch(`/tables/${editing.id}`, payload);
-      return api.post('/tables', payload);
+      if (editing) return api.patch(`/admin/tables/${editing.id}`, payload);
+      return api.post('/admin/tables', payload);
     },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['admin-tables'] }); setShowForm(false); setEditing(null); setForm({ name: '', number: 1, seats: 4, zone: '', isActive: true }); },
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async (id: string) => api.delete(`/tables/${id}`),
+    mutationFn: async (id: string) => api.delete(`/admin/tables/${id}`),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin-tables'] }),
   });
 
   const updateStatus = useMutation({
     mutationFn: async ({ id, status, waiterId }: { id: string; status: string; waiterId?: string | null }) =>
-      api.patch(`/tables/${id}/status`, { status, waiterId: waiterId === undefined ? undefined : waiterId }),
+      api.patch(`/admin/tables/${id}/status`, { status, waiterId: waiterId === undefined ? undefined : waiterId }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin-tables'] }),
   });
 

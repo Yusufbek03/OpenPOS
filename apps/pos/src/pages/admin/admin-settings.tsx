@@ -26,7 +26,7 @@ export function AdminSettings() {
   const { data: companiesData, isLoading } = useQuery({
     queryKey: ['admin-companies'],
     queryFn: async () => {
-      const { data } = await api.get('/companies', { params: { limit: 1 } });
+      const { data } = await api.get('/admin/companies', { params: { limit: 1 } });
       return data;
     },
   });
@@ -44,8 +44,8 @@ export function AdminSettings() {
         defaultCurrency: formData.defaultCurrency,
         defaultLocale: formData.defaultLocale,
       };
-      if (editingId) return api.patch(`/companies/${editingId}`, payload);
-      return api.post('/companies', payload);
+      if (editingId) return api.patch(`/admin/companies/${editingId}`, payload);
+      return api.post('/admin/companies', payload);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-companies'] });
@@ -275,7 +275,7 @@ function ClearAllData() {
   const [success, setSuccess] = useState(false);
 
   const clearAll = useMutation({
-    mutationFn: async () => api.post('/reports/clear-all'),
+    mutationFn: async () => api.post('/admin/reports/clear-all'),
     onSuccess: () => {
       setSuccess(true);
       setShowConfirm(false);

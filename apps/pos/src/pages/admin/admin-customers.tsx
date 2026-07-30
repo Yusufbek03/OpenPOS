@@ -44,7 +44,7 @@ export function AdminCustomers() {
   const { data: customersData, isLoading } = useQuery({
     queryKey: ['admin-customers', search, filterStatus],
     queryFn: async () => {
-      const { data } = await api.get('/customers', { params: { limit: 100, search: search || undefined, status: filterStatus || undefined } });
+      const { data } = await api.get('/admin/customers', { params: { limit: 100, search: search || undefined, status: filterStatus || undefined } });
       return data;
     },
   });
@@ -52,7 +52,7 @@ export function AdminCustomers() {
   const { data: stats } = useQuery({
     queryKey: ['admin-customers-stats'],
     queryFn: async () => {
-      const { data } = await api.get('/customers/stats');
+      const { data } = await api.get('/admin/customers/stats');
       return data as CustomerStats;
     },
   });
@@ -66,14 +66,14 @@ export function AdminCustomers() {
         birthDate: formData.birthDate || null,
         notes: formData.notes || null,
       };
-      if (editing) return api.patch(`/customers/${editing.id}`, payload);
-      return api.post('/customers', payload);
+      if (editing) return api.patch(`/admin/customers/${editing.id}`, payload);
+      return api.post('/admin/customers', payload);
     },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['admin-customers'] }); setShowForm(false); setEditing(null); resetForm(); },
   });
 
   const deleteCustomer = useMutation({
-    mutationFn: (id: string) => api.delete(`/customers/${id}`),
+    mutationFn: (id: string) => api.delete(`/admin/customers/${id}`),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin-customers'] }),
   });
 
@@ -81,8 +81,8 @@ export function AdminCustomers() {
     mutationFn: async () => {
       if (!bonusModal || !bonusAmount) return;
       const url = bonusModal.type === 'accrue'
-        ? `/customers/${bonusModal.customer.id}/bonus/accrue`
-        : `/customers/${bonusModal.customer.id}/bonus/writeoff`;
+        ? `/admin/customers/${bonusModal.customer.id}/bonus/accrue`
+        : `/admin/customers/${bonusModal.customer.id}/bonus/writeoff`;
       return api.post(url, { amount: Number(bonusAmount) });
     },
     onSuccess: () => {

@@ -16,7 +16,7 @@ export function AdminDashboard() {
   const { data, isLoading } = useQuery({
     queryKey: ['admin-dashboard'],
     queryFn: async () => {
-      const { data } = await api.get<DashboardData>('/reports/dashboard');
+      const { data } = await api.get<DashboardData>('/admin/reports/dashboard');
       return data;
     },
   });

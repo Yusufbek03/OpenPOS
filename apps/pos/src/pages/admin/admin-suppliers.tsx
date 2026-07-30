@@ -27,7 +27,7 @@ export function AdminSuppliers() {
   const { data: suppliersData, isLoading } = useQuery({
     queryKey: ['admin-suppliers', search],
     queryFn: async () => {
-      const { data } = await api.get('/suppliers', { params: { limit: 200, search: search || undefined } });
+      const { data } = await api.get('/admin/suppliers', { params: { limit: 200, search: search || undefined } });
       return data;
     },
   });
@@ -42,14 +42,14 @@ export function AdminSuppliers() {
         address: formData.address || null,
         contactPerson: formData.contactPerson || null,
       };
-      if (editing) return api.patch(`/suppliers/${editing.id}`, payload);
-      return api.post('/suppliers', payload);
+      if (editing) return api.patch(`/admin/suppliers/${editing.id}`, payload);
+      return api.post('/admin/suppliers', payload);
     },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['admin-suppliers'] }); setShowForm(false); setEditing(null); resetForm(); },
   });
 
   const deleteSupplier = useMutation({
-    mutationFn: (id: string) => api.delete(`/suppliers/${id}`),
+    mutationFn: (id: string) => api.delete(`/admin/suppliers/${id}`),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin-suppliers'] }),
   });
 

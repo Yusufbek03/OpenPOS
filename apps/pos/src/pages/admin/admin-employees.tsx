@@ -30,7 +30,7 @@ export function AdminEmployees() {
   const { data: users = [], isLoading } = useQuery({
     queryKey: ['admin-users', search],
     queryFn: async () => {
-      const { data } = await api.get('/users', { params: { limit: 200, search: search || undefined } });
+      const { data } = await api.get('/admin/users', { params: { limit: 200, search: search || undefined } });
       return data.users as User[];
     },
   });
@@ -38,14 +38,14 @@ export function AdminEmployees() {
   const saveUser = useMutation({
     mutationFn: async (f: typeof form) => {
       const payload = { ...f, password: f.password || undefined, pinCode: f.pinCode || undefined };
-      if (editingUser) return api.patch(`/users/${editingUser.id}`, { fullName: f.fullName, role: f.role, pinCode: f.pinCode || undefined });
-      return api.post('/users', payload);
+      if (editingUser) return api.patch(`/admin/users/${editingUser.id}`, { fullName: f.fullName, role: f.role, pinCode: f.pinCode || undefined });
+      return api.post('/admin/users', payload);
     },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['admin-users'] }); setShowForm(false); setEditingUser(null); setForm({ fullName: '', username: '', password: '', role: 'CASHIER', pinCode: '' }); },
   });
 
   const deleteUser = useMutation({
-    mutationFn: (id: string) => api.delete(`/users/${id}`),
+    mutationFn: (id: string) => api.delete(`/admin/users/${id}`),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin-users'] }),
   });
 

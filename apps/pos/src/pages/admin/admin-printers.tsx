@@ -34,7 +34,7 @@ export function AdminPrinters() {
   const { data: printers = [], isLoading } = useQuery({
     queryKey: ['admin-printers', search],
     queryFn: async () => {
-      const { data } = await api.get('/printers', { params: { department: search || undefined } });
+      const { data } = await api.get('/admin/printers', { params: { department: search || undefined } });
       return (data || []) as Printer[];
     },
   });
@@ -50,14 +50,14 @@ export function AdminPrinters() {
         paperWidth: Number(formData.paperWidth),
         isActive: formData.isActive,
       };
-      if (editingPrinter) return api.patch(`/printers/${editingPrinter.id}`, payload);
-      return api.post('/printers', payload);
+      if (editingPrinter) return api.patch(`/admin/printers/${editingPrinter.id}`, payload);
+      return api.post('/admin/printers', payload);
     },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['admin-printers'] }); setShowForm(false); setEditingPrinter(null); resetForm(); },
   });
 
   const deletePrinter = useMutation({
-    mutationFn: (id: string) => api.delete(`/printers/${id}`),
+    mutationFn: (id: string) => api.delete(`/admin/printers/${id}`),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin-printers'] }),
   });
 
@@ -72,7 +72,7 @@ export function AdminPrinters() {
   const testConnection = async (id: string) => {
     setTestStatus((prev) => ({ ...prev, [id]: 'testing' }));
     try {
-      const { data } = await api.post(`/printers/${id}/test`);
+      const { data } = await api.post(`/admin/printers/${id}/test`);
       setTestStatus((prev) => ({ ...prev, [id]: data.connected ? 'ok' : 'fail' }));
     } catch {
       setTestStatus((prev) => ({ ...prev, [id]: 'fail' }));
