@@ -17,7 +17,7 @@ COPY packages/offline-sync/package.json packages/offline-sync/
 COPY packages/printer/package.json packages/printer/
 COPY packages/websocket/package.json packages/websocket/
 COPY packages/ui/package.json packages/ui/
-RUN pnpm install --frozen-lockfile --ignore-scripts
+RUN pnpm install --frozen-lockfile
 RUN cd packages/database && npx prisma generate
 
 FROM base AS builder
