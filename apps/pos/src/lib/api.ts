@@ -8,6 +8,18 @@ export const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
+  const url = config.url || '';
+
+  if (url.startsWith('/admin/')) {
+    config.url = `/admin-handler?_path=${encodeURIComponent(url.substring(7))}`;
+  } else if (url === '/admin') {
+    config.url = '/admin-handler';
+  } else if (url.startsWith('/kitchen/')) {
+    config.url = `/kitchen-handler?_path=${encodeURIComponent(url.substring(9))}`;
+  } else if (url === '/kitchen') {
+    config.url = '/kitchen-handler';
+  }
+
   const token = localStorage.getItem('pos_access_token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;

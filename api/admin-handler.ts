@@ -5,7 +5,7 @@ const ENTITY_TABLES: Record<string, string> = {
   customers: 'customers',
   suppliers: 'suppliers',
   printers: 'printers',
-  'kitchen/stations': 'kitchen_stations',
+  kitchen: 'kitchen_stations',
   tables: 'restaurant_tables',
   'register-ops': 'register_ops',
   audit: 'audit_logs',
@@ -16,7 +16,7 @@ const ENTITY_TABLES: Record<string, string> = {
 
 const ENTITY_SELECT: Record<string, string> = {
   printers: '*',
-  'kitchen/stations': '*, printer:printers(id, name)',
+  kitchen: '*, printer:printers(id, name)',
   users: 'id, fullName, username, role, pinCode, isActive, createdAt',
 };
 
@@ -30,6 +30,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const path = decodeURIComponent(raw);
   const slug = path ? path.split('/').filter(Boolean) : [];
   const entityPath = slug.join('/');
+  const baseEntity = slug[0] || '';
   const id = slug[slug.length - 1];
 
   if (!path) return json(res, { message: 'Admin API v1.0' }, 200, origin);
@@ -55,15 +56,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (entityPath === 'tables/zones') return handleTableZones(res, origin);
   if (entityPath === 'tables/stats') return handleTableStats(res, origin);
 
-  const table = ENTITY_TABLES[entityPath];
+  const table = ENTITY_TABLES[baseEntity];
   if (!table) return error(res, `Unknown entity: ${entityPath}`, 400, origin);
 
-  const select = ENTITY_SELECT[entityPath] || '*';
+  const select = ENTITY_SELECT[baseEntity] || '*';
 
   if (req.method === 'GET' && slug.length >= 2 && !['stats', 'dashboard', 'zones'].includes(id)) {
     const recordId = slug[1];
     const { data, error: e } = await supabase.from(table).select(select).eq('id', recordId).single();
-    if (e || !data) return error(res, `${entityPath} not found`, 404, origin);
+    if (e || !data) return error(res, `${baseEntity} not found`, 404, origin);
     return json(res, data, 200, origin);
   }
 
@@ -87,14 +88,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     let query = supabase.from(table).select(select, { count: 'exact' }).is('deletedAt', null);
 
-    if (entityPath === 'customers') {
+    if (baseEntity === 'customers') {
       if (search) { const s = String(search); query = query.or(`fullName.ilike.%${s}%,phone.ilike.%${s}%,email.ilike.%${s}%`); }
       if (filters.status) query = query.eq('status', filters.status);
-    } else if (entityPath === 'suppliers') {
+    } else if (baseEntity === 'suppliers') {
       if (search) { const s = String(search); query = query.or(`name.ilike.%${s}%,inn.ilike.%${s}%,contactPerson.ilike.%${s}%`); }
-    } else if (entityPath === 'printers') {
+    } else if (baseEntity === 'printers') {
       if (filters.department) query = query.eq('department', filters.department);
-    } else if (entityPath === 'users') {
+    } else if (baseEntity === 'users') {
       if (search) { const s = String(search); query = query.or(`fullName.ilike.%${s}%,username.ilike.%${s}%`); }
     }
 
@@ -105,7 +106,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const { data, error: e, count } = await query;
     if (e) return error(res, e.message, 500, origin);
 
-    const responseKey = entityPath === 'register-ops' ? 'ops' : entityPath;
+    const responseKey = baseEntity === 'register-ops' ? 'ops' : baseEntity;
     return json(res, { [responseKey]: data, items: data, total: count, page: p, limit: l }, 200, origin);
   }
 
@@ -128,7 +129,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       body.paperWidth = body.paperWidth || 80;
       body.isActive = body.isActive !== false;
     }
-    if (entityPath === 'kitchen/stations') {
+    if (baseEntity === 'kitchen') {
       if (!body.name) return error(res, 'name is required', 400, origin);
       body.sortOrder = body.sortOrder || 0;
       body.isActive = body.isActive !== 'false' && body.isActive !== false;

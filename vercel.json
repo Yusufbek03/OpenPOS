@@ -5,10 +5,6 @@
   "outputDirectory": "apps/pos/dist",
   "framework": "vite",
   "rewrites": [
-    { "source": "/api/admin/:path+", "destination": "/api/admin-handler?_path=:path+" },
-    { "source": "/api/kitchen/:path+", "destination": "/api/kitchen-handler?_path=:path+" },
-    { "source": "/api/admin", "destination": "/api/admin-handler" },
-    { "source": "/api/kitchen", "destination": "/api/kitchen-handler" },
     { "source": "/((?!assets|icons|favicon|favicon\\.png|manifest\\.json|sw\\.js|robots\\.txt|api).*)", "destination": "/index.html" }
   ]
 }
