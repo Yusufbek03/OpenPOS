@@ -5,6 +5,10 @@ WORKDIR /app
 FROM base AS deps
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/api/package.json apps/api/
+COPY apps/admin/package.json apps/admin/
+COPY apps/pos/package.json apps/pos/
+COPY apps/kitchen/package.json apps/kitchen/
+COPY apps/customer-display/package.json apps/customer-display/
 COPY packages/database/package.json packages/database/
 COPY packages/shared/package.json packages/shared/
 COPY packages/auth/package.json packages/auth/
@@ -12,6 +16,7 @@ COPY packages/config/package.json packages/config/
 COPY packages/offline-sync/package.json packages/offline-sync/
 COPY packages/printer/package.json packages/printer/
 COPY packages/websocket/package.json packages/websocket/
+COPY packages/ui/package.json packages/ui/
 RUN pnpm install --frozen-lockfile --ignore-scripts
 RUN cd packages/database && npx prisma generate
 
