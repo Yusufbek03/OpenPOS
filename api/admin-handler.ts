@@ -86,7 +86,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const l = Math.min(200, Math.max(1, Number(limit)));
     const offset = (p - 1) * l;
 
-    const tablesWithoutSoftDelete = ['restaurant_tables', 'register_ops'];
+    const tablesWithoutSoftDelete = ['restaurant_tables', 'register_ops', 'inventory_items'];
     let query = supabase.from(table).select(select, { count: 'exact' });
     if (!tablesWithoutSoftDelete.includes(table)) {
       query = query.is('deletedAt', null);
@@ -237,7 +237,7 @@ async function handleAudit(req: VercelRequest, res: VercelResponse, origin: stri
 
 async function handleRegisterOps(req: VercelRequest, res: VercelResponse, origin: string | undefined, payload: Record<string, unknown>) {
   if (req.method === 'GET') {
-    const { data, error: e } = await supabase.from('register_ops').select('*, user:users!register_ops_userId_fkey(fullName)').order('createdAt', { ascending: false });
+    const { data, error: e } = await supabase.from('register_ops').select('*').order('createdAt', { ascending: false });
     if (e) return error(res, e.message, 500, origin);
     return json(res, { ops: data, items: data }, 200, origin);
   }
@@ -257,7 +257,7 @@ async function handleInventory(req: VercelRequest, res: VercelResponse, origin: 
   const l = Math.min(500, Math.max(1, Number(limit)));
   const offset = (p - 1) * l;
 
-  let query = supabase.from('inventory_items').select('*, product:products(id, name, nameRu, sku)', { count: 'exact' }).is('deletedAt', null);
+  let query = supabase.from('inventory_items').select('*, product:products(id, name, nameRu, sku)', { count: 'exact' });
   if (lowStock === 'true' || lowStock === '1') query = query.filter('quantity', 'lte', 'minStock');
   query = query.order('createdAt', { ascending: false }).range(offset, offset + l - 1);
 
