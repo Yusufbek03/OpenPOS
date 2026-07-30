@@ -16,8 +16,8 @@ const ENTITY_TABLES: Record<string, string> = {
 
 const ENTITY_SELECT: Record<string, string> = {
   printers: '*',
-  kitchen: '*, printer:printers(id, name)',
-  users: 'id, fullName, username, role, pinCode, isActive, createdAt',
+  kitchen: '*, printer:printers!kitchen_stations_printerId_fkey(id, name)',
+  users: 'id, fullName, username, roleId, role:roles(name), pinCode, isActive, createdAt',
 };
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -86,7 +86,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const l = Math.min(200, Math.max(1, Number(limit)));
     const offset = (p - 1) * l;
 
-    let query = supabase.from(table).select(select, { count: 'exact' }).is('deletedAt', null);
+    const tablesWithoutSoftDelete = ['restaurant_tables', 'register_ops'];
+    let query = supabase.from(table).select(select, { count: 'exact' });
+    if (!tablesWithoutSoftDelete.includes(table)) {
+      query = query.is('deletedAt', null);
+    }
 
     if (baseEntity === 'customers') {
       if (search) { const s = String(search); query = query.or(`fullName.ilike.%${s}%,phone.ilike.%${s}%,email.ilike.%${s}%`); }

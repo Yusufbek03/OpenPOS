@@ -27,7 +27,7 @@ async function handleStations(req: VercelRequest, res: VercelResponse, origin: s
   if (req.method !== 'GET') return error(res, 'GET only', 405, origin);
   const { data, error: e } = await supabase
     .from('kitchen_stations')
-    .select('*, printer:printers(id, name)')
+    .select('*, printer:printers!kitchen_stations_printerId_fkey(id, name)')
     .eq('isActive', true)
     .is('deletedAt', null)
     .order('sortOrder', { ascending: true });
