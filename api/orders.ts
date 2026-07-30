@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { supabase, json, error, verifyToken } from './lib/supabase';
+import { supabase, json, error, corsPreflight, verifyToken } from './lib/supabase';
 
 function generateOrderNumber(): string {
   const now = new Date();
@@ -7,10 +7,10 @@ function generateOrderNumber(): string {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  if (req.method === 'OPTIONS') return json({}, 200, req.headers.origin);
+  if (req.method === 'OPTIONS') return corsPreflight(res, req.headers.origin);
   const origin = req.headers.origin;
   const payload = verifyToken(req);
-  if (!payload) return error('Unauthorized', 401, origin);
+  if (!payload) return error(res, 'Unauthorized', 401, origin);
 
   const url = req.url ?? '';
   const idMatch = url.match(/\/api\/orders\/([a-f0-9-]+)/);
@@ -18,23 +18,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   if (req.method === 'GET' && id) {
     const { data, error: e } = await supabase.from('orders').select('*, items:order_items(*, product:products(id, name, nameRu, price)), cashier:users!orders_cashierId_fkey(fullName), waiter:users!orders_waiterId_fkey(fullName)').eq('id', id).single();
-    if (e || !data) return error('Order not found', 404, origin);
-    return json(data, 200, origin);
+    if (e || !data) return error(res, 'Order not found', 404, origin);
+    return json(res, data, 200, origin);
   }
   if ((req.method === 'PATCH' || req.method === 'DELETE') && id) {
     if (req.method === 'PATCH') {
       const { data, error: e } = await supabase.from('orders').update(req.body).eq('id', id).select().single();
-      if (e) return error(e.message, 500, origin);
-      return json(data, 200, origin);
+      if (e) return error(res, e.message, 500, origin);
+      return json(res, data, 200, origin);
     }
     const { error: e } = await supabase.from('orders').update({ status: 'CANCELLED', deletedAt: new Date().toISOString() }).eq('id', id);
-    if (e) return error(e.message, 500, origin);
-    return json({ message: 'Cancelled' }, 200, origin);
+    if (e) return error(res, e.message, 500, origin);
+    return json(res, { message: 'Cancelled' }, 200, origin);
   }
 
   if (url.endsWith('/open') && req.method === 'GET') {
     const { count } = await supabase.from('orders').select('*', { count: 'exact', head: true }).in('status', ['PENDING', 'SENT_TO_KITCHEN', 'PREPARING', 'READY']);
-    return json({ count: count ?? 0 }, 200, origin);
+    return json(res, { count: count ?? 0 }, 200, origin);
   }
 
   if (req.method === 'GET') {
@@ -46,13 +46,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (status) query = query.eq('status', status);
     if (search) query = query.ilike('orderNumber', `%${search}%`);
     const { data, error: e, count } = await query.order('createdAt', { ascending: false }).range(offset, offset + l - 1);
-    if (e) return error(e.message, 500, origin);
-    return json({ items: data, total: count, page: p, limit: l }, 200, origin);
+    if (e) return error(res, e.message, 500, origin);
+    return json(res, { items: data, total: count, page: p, limit: l }, 200, origin);
   }
 
   if (req.method === 'POST') {
     const { items, cashierId, waiterId, tableId, customerId, discount, notes } = req.body;
-    if (!items?.length) return error('items обязателен', 400, origin);
+    if (!items?.length) return error(res, 'items обязателен', 400, origin);
     let subtotal = 0;
     for (const item of items) subtotal += item.quantity * item.unitPrice;
     const total = subtotal - (discount ?? 0);
@@ -62,7 +62,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       orderNumber, status: 'PENDING', cashierId: cashierId ?? payload.sub, waiterId, tableId, customerId,
       subtotal, discount: discount ?? 0, tax: 0, total, notes, branchId,
     }).select().single();
-    if (e) return error(e.message, 500, origin);
+    if (e) return error(res, e.message, 500, origin);
     for (const item of items) {
       await supabase.from('order_items').insert({
         orderId: order.id, productId: item.productId, quantity: item.quantity, unitPrice: item.unitPrice,
@@ -70,8 +70,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
     const { data: fullOrder } = await supabase.from('orders').select('*, items:order_items(*, product:products(id, name, nameRu, price)), cashier:users!orders_cashierId_fkey(fullName)').eq('id', order.id).single();
-    return json(fullOrder, 201, origin);
+    return json(res, fullOrder, 201, origin);
   }
 
-  return error('Method not allowed', 405, origin);
+  return error(res, 'Method not allowed', 405, origin);
 }
