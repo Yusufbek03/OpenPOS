@@ -4,8 +4,8 @@ services:
     runtime: node
     plan: free
     region: oregon
-    buildCommand: corepack enable && pnpm install --frozen-lockfile && cd packages/database && npx prisma generate && npx prisma migrate deploy && cd ../../apps/api && npx tsc
-    startCommand: cd apps/api && node dist/main.js
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && cd packages/database && npx prisma generate && npx prisma migrate deploy
+    startCommand: cd apps/api && npx tsx src/main.ts
     envVars:
       - key: DATABASE_URL
         value: postgresql://postgres:hyy-JfC-g2L-s6j@db.ytanvpjxqfdxcvghmzny.supabase.co:5432/postgres
