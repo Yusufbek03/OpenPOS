@@ -22,7 +22,7 @@ export function ProductGrid({ products }: ProductGridProps) {
           }}
         >
           {product.imageUrl ? (
-            <img src={{product.imageUrl}} alt={product.nameRu} style={{ width: 80, height: 80, borderRadius: 16, objectFit: 'cover' }} />
+            <img src={product.imageUrl} alt={product.nameRu} style={{ width: 80, height: 80, borderRadius: 16, objectFit: 'cover' }} />
           ) : (
             <div style={{ width: 64, height: 64, borderRadius: 16, background: '#F3F4F6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <span style={{ fontSize: 36 }}>📦</span>

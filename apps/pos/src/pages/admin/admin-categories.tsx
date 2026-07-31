@@ -91,7 +91,7 @@ export function AdminCategories() {
                 </div>
                 {form.imageUrl && (
                   <div style={{ textAlign: 'center', marginTop: 8 }}>
-                    <img src={{form.imageUrl}} alt="Preview" style={{ maxWidth: 80, maxHeight: 80, borderRadius: 12, objectFit: 'cover', border: '1px solid #E5E7EB' }} />
+                    <img src={form.imageUrl} alt="Preview" style={{ maxWidth: 80, maxHeight: 80, borderRadius: 12, objectFit: 'cover', border: '1px solid #E5E7EB' }} />
                   </div>
                 )}
               </div>
