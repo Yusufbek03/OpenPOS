@@ -27,6 +27,7 @@ export function PosPage({ showAdmin }: PosPageProps) {
   const [showCloseRegister, setShowCloseRegister] = useState(false);
   const [isLocked, setIsLocked] = useState(false);
   const [view, setView] = useState<'pos' | 'admin-gate' | 'admin'>('pos');
+  const [adminRevealed, setAdminRevealed] = useState(false);
   const queryClient = useQueryClient();
   const { c } = useTheme();
 
@@ -147,8 +148,9 @@ export function PosPage({ showAdmin }: PosPageProps) {
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         isOnline={isOnline}
-        onAdminClick={isAdmin && showAdmin ? () => setView('admin-gate') : undefined}
+        onAdminClick={isAdmin && (showAdmin || adminRevealed) ? () => setView('admin-gate') : undefined}
         onCloseRegister={() => setShowCloseRegister(true)}
+        onLogoTripleTap={() => { if (isAdmin) setAdminRevealed(true); }}
       />
 
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>

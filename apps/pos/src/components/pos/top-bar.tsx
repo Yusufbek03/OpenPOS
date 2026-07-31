@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Search, Users, LogOut, Wifi, WifiOff, Settings, Sun, Moon, Lock, Download } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth-store';
 import { useTheme } from '@/hooks/use-theme';
@@ -9,14 +9,27 @@ interface TopBarProps {
   isOnline: boolean;
   onAdminClick?: () => void;
   onCloseRegister?: () => void;
+  onLogoTripleTap?: () => void;
 }
 
-export function TopBar({ searchQuery, onSearchChange, isOnline, onAdminClick, onCloseRegister }: TopBarProps) {
+export function TopBar({ searchQuery, onSearchChange, isOnline, onAdminClick, onCloseRegister, onLogoTripleTap }: TopBarProps) {
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
   const { c, toggleTheme } = useTheme();
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [canInstall, setCanInstall] = useState(false);
+  const tapCount = useRef(0);
+  const tapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleLogoTap = () => {
+    tapCount.current++;
+    if (tapTimer.current) clearTimeout(tapTimer.current);
+    tapTimer.current = setTimeout(() => { tapCount.current = 0; }, 800);
+    if (tapCount.current >= 3) {
+      tapCount.current = 0;
+      onLogoTripleTap?.();
+    }
+  };
 
   useEffect(() => {
     const handler = (e: any) => { e.preventDefault(); setDeferredPrompt(e); setCanInstall(true); };
@@ -33,7 +46,7 @@ export function TopBar({ searchQuery, onSearchChange, isOnline, onAdminClick, on
 
   return (
     <header style={{ height: 56, background: c.bg, borderBottom: `1px solid ${c.border}`, display: 'flex', alignItems: 'center', padding: '0 16px', gap: 16, flexShrink: 0 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', userSelect: 'none' }} onClick={handleLogoTap}>
         <div style={{ width: 32, height: 32, borderRadius: 8, background: c.primary, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <span style={{ color: c.textInverse, fontWeight: 700, fontSize: 13 }}>OP</span>
         </div>
