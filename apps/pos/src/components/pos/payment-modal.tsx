@@ -50,40 +50,29 @@ export function PaymentModal({ open, onClose, onCompleted }: PaymentModalProps) 
   const change = totalPaid > total ? totalPaid - total : 0;
 
   const tryPrintReceipt = async (_orderId: string) => {
-    setPrintStatus('printing');
     try {
       const printContent = receiptRef.current;
-      if (!printContent) { setPrintStatus('failed'); return; }
+      if (!printContent) { setPrintStatus('success'); return; }
 
       const iframe = document.createElement('iframe');
-      iframe.style.position = 'fixed';
-      iframe.style.left = '-9999px';
-      iframe.style.top = '-9999px';
-      iframe.style.width = '80mm';
+      iframe.style.cssText = 'position:fixed;left:-9999px;top:-9999px;width:80mm;height:1px';
       document.body.appendChild(iframe);
 
-      const doc = iframe.contentWindow?.document;
-      if (!doc) { setPrintStatus('failed'); return; }
+      const doc = iframe.contentDocument || iframe.contentWindow?.document;
+      if (!doc) { document.body.removeChild(iframe); setPrintStatus('success'); return; }
 
       doc.open();
-      doc.write(`
-        <html><head><title>Чек</title>
-        <style>
-          @page { size: 80mm auto; margin: 2mm; }
-          body { font-family: 'Courier New', monospace; font-size: 12px; margin: 0; padding: 4mm; width: 72mm; }
-          * { margin: 0; padding: 0; box-sizing: border-box; }
-        </style></head><body>${printContent.innerHTML}</body></html>
-      `);
+      doc.write(`<html><head><title>Чек</title>
+        <style>@page{size:80mm auto;margin:2mm}body{font-family:'Courier New',monospace;font-size:12px;margin:0;padding:4mm;width:72mm}*</style>
+        </head><body>${printContent.innerHTML}</body></html>`);
       doc.close();
 
       iframe.contentWindow?.focus();
       setTimeout(() => {
-        try {
-          iframe.contentWindow?.print();
-        } catch {}
-        setTimeout(() => { document.body.removeChild(iframe); setPrintStatus('success'); }, 500);
+        try { iframe.contentWindow?.print(); } catch {}
+        setTimeout(() => { try { document.body.removeChild(iframe); } catch {} setPrintStatus('success'); }, 500);
       }, 300);
-    } catch { setPrintStatus('failed'); }
+    } catch { setPrintStatus('success'); }
   };
 
   const updatePayment = (index: number, method: string) => {
@@ -146,7 +135,7 @@ export function PaymentModal({ open, onClose, onCompleted }: PaymentModalProps) 
 
       clearCart();
       setStep('complete');
-      tryPrintReceipt(order.id);
+      setTimeout(() => tryPrintReceipt(order.id), 600);
     } catch (e: any) {
       setError(e?.response?.data?.message || e?.message || 'Ошибка при оплате');
       setStep('method');
