@@ -121,6 +121,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return json(res, { message: 'PIN верный', valid: true }, 200, origin);
   }
 
+  if (req.method === 'POST' && action === 'set-pin') {
+    const { userId, pin } = req.body;
+    if (!userId || !pin) return error(res, 'userId и pin обязательны', 400, origin);
+    if (pin.length < 4 || pin.length > 10) return error(res, 'PIN должен быть от 4 до 10 цифр', 400, origin);
+    const { error: e } = await supabase.from('users').update({ pinCode: pin }).eq('id', userId);
+    if (e) return error(res, e.message, 500, origin);
+    return json(res, { message: 'PIN установлен' }, 200, origin);
+  }
+
   if (req.method === 'GET' && action === 'users-for-pin') {
     const payload = verifyToken(req);
     if (!payload) return error(res, 'Unauthorized', 401, origin);
