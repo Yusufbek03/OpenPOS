@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, Suspense, lazy } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { TopBar } from '@/components/pos/top-bar';
 import { ProductGrid } from '@/components/pos/product-grid';
@@ -7,12 +7,13 @@ import { PaymentModal } from '@/components/pos/payment-modal';
 import { CloseRegisterModal } from '@/components/pos/close-register-modal';
 import { LockScreen } from '@/components/pos/lock-screen';
 import { useProducts, useProductSearch, useCategories } from '@/hooks/use-pos-data';
-import { AdminPanel } from '@/pages/admin/admin-panel';
-import { AdminGate } from '@/pages/admin/admin-gate';
 import { useAuthStore } from '@/stores/auth-store';
 import { useCartStore } from '@/stores/cart-store';
 import { ArrowLeft } from 'lucide-react';
 import { useTheme } from '@/hooks/use-theme';
+
+const AdminPanel = lazy(() => import('@/pages/admin/admin-panel').then(m => ({ default: m.AdminPanel })));
+const AdminGate = lazy(() => import('@/pages/admin/admin-gate').then(m => ({ default: m.AdminGate })));
 
 interface PosPageProps {
   showAdmin?: boolean;
@@ -127,11 +128,11 @@ export function PosPage({ showAdmin }: PosPageProps) {
   }, [handleBarcodeScan]);
 
   if (isAdmin && view === 'admin-gate' && showAdmin) {
-    return <AdminGate onUnlock={() => setView('admin')} />;
+    return <Suspense fallback={<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', color: '#6B7280' }}>Загрузка...</div>}><AdminGate onUnlock={() => setView('admin')} /></Suspense>;
   }
 
   if (isAdmin && view === 'admin' && showAdmin) {
-    return <AdminPanel onBackToPos={() => setView('pos')} />;
+    return <Suspense fallback={<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', color: '#6B7280' }}>Загрузка...</div>}><AdminPanel onBackToPos={() => setView('pos')} /></Suspense>;
   }
 
   if (isLocked) {

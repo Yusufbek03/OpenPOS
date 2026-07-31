@@ -1,22 +1,22 @@
-import { useState } from 'react';
+import { useState, Suspense, lazy } from 'react';
 import { useAuthStore } from '@/stores/auth-store';
-import { PosPage } from '@/pages/pos-page';
-import { AdminDashboard } from './admin-dashboard';
-import { AdminProducts } from './admin-products';
-import { AdminOrders } from './admin-orders';
-import { AdminEmployees } from './admin-employees';
-import { AdminCashReport } from './admin-cash-report';
-import { AdminCategories } from './admin-categories';
-import { AdminPrinters } from './admin-printers';
-import { AdminStations } from './admin-stations';
-import { AdminCustomers } from './admin-customers';
-import { AdminInventory } from './admin-inventory';
-import { AdminSuppliers } from './admin-suppliers';
-import { AdminSettings } from './admin-settings';
-import { AdminAuditLog } from './admin-audit';
-import { AdminTables } from './admin-tables';
-import { AdminRemovedItems } from './admin-removed-items';
 import { LayoutDashboard, Package, ShoppingCart, Users, BarChart3, ArrowLeft, LogOut, Tag, Printer, ChefHat, Contact, Warehouse, Truck, Settings, Shield, Grid3x3, Trash2 } from 'lucide-react';
+
+const AdminDashboard = lazy(() => import('./admin-dashboard').then(m => ({ default: m.AdminDashboard })));
+const AdminProducts = lazy(() => import('./admin-products').then(m => ({ default: m.AdminProducts })));
+const AdminOrders = lazy(() => import('./admin-orders').then(m => ({ default: m.AdminOrders })));
+const AdminEmployees = lazy(() => import('./admin-employees').then(m => ({ default: m.AdminEmployees })));
+const AdminCashReport = lazy(() => import('./admin-cash-report').then(m => ({ default: m.AdminCashReport })));
+const AdminCategories = lazy(() => import('./admin-categories').then(m => ({ default: m.AdminCategories })));
+const AdminPrinters = lazy(() => import('./admin-printers').then(m => ({ default: m.AdminPrinters })));
+const AdminStations = lazy(() => import('./admin-stations').then(m => ({ default: m.AdminStations })));
+const AdminCustomers = lazy(() => import('./admin-customers').then(m => ({ default: m.AdminCustomers })));
+const AdminInventory = lazy(() => import('./admin-inventory').then(m => ({ default: m.AdminInventory })));
+const AdminSuppliers = lazy(() => import('./admin-suppliers').then(m => ({ default: m.AdminSuppliers })));
+const AdminSettings = lazy(() => import('./admin-settings').then(m => ({ default: m.AdminSettings })));
+const AdminAuditLog = lazy(() => import('./admin-audit').then(m => ({ default: m.AdminAuditLog })));
+const AdminTables = lazy(() => import('./admin-tables').then(m => ({ default: m.AdminTables })));
+const AdminRemovedItems = lazy(() => import('./admin-removed-items').then(m => ({ default: m.AdminRemovedItems })));
 
 type AdminView = 'dashboard' | 'products' | 'categories' | 'orders' | 'employees' | 'printers' | 'stations' | 'customers' | 'inventory' | 'suppliers' | 'settings' | 'audit' | 'cash-report' | 'tables' | 'pos' | 'removed-items';
 
@@ -49,7 +49,7 @@ export function AdminPanel({ onBackToPos }: AdminPanelProps) {
   const logout = useAuthStore((s) => s.logout);
 
   if (view === 'pos') {
-    return <PosPage />;
+    return onBackToPos() as any;
   }
 
   return (
@@ -101,21 +101,23 @@ export function AdminPanel({ onBackToPos }: AdminPanelProps) {
       </aside>
 
       <main className="flex-1 overflow-auto" style={{ background: '#F8FAFC' }}>
-        {view === 'dashboard' && <AdminDashboard />}
-        {view === 'products' && <AdminProducts />}
-        {view === 'categories' && <AdminCategories />}
-        {view === 'orders' && <AdminOrders />}
-        {view === 'employees' && <AdminEmployees />}
-        {view === 'printers' && <AdminPrinters />}
-        {view === 'stations' && <AdminStations />}
-        {view === 'tables' && <AdminTables />}
-        {view === 'customers' && <AdminCustomers />}
-        {view === 'inventory' && <AdminInventory />}
-        {view === 'suppliers' && <AdminSuppliers />}
-        {view === 'settings' && <AdminSettings />}
-        {view === 'audit' && <AdminAuditLog />}
-        {view === 'cash-report' && <AdminCashReport />}
-        {view === 'removed-items' && <AdminRemovedItems />}
+        <Suspense fallback={<div style={{ padding: 40, textAlign: 'center', color: '#6B7280' }}>Загрузка...</div>}>
+          {view === 'dashboard' && <AdminDashboard />}
+          {view === 'products' && <AdminProducts />}
+          {view === 'categories' && <AdminCategories />}
+          {view === 'orders' && <AdminOrders />}
+          {view === 'employees' && <AdminEmployees />}
+          {view === 'printers' && <AdminPrinters />}
+          {view === 'stations' && <AdminStations />}
+          {view === 'tables' && <AdminTables />}
+          {view === 'customers' && <AdminCustomers />}
+          {view === 'inventory' && <AdminInventory />}
+          {view === 'suppliers' && <AdminSuppliers />}
+          {view === 'settings' && <AdminSettings />}
+          {view === 'audit' && <AdminAuditLog />}
+          {view === 'cash-report' && <AdminCashReport />}
+          {view === 'removed-items' && <AdminRemovedItems />}
+        </Suspense>
       </main>
     </div>
   );
