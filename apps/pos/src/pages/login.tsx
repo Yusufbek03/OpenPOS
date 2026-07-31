@@ -21,10 +21,13 @@ export function LoginPage({ onRegister }: LoginPageProps) {
 
   const handleGoogleLogin = async () => {
     setError('');
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
+      (window.navigator as any).standalone === true;
     const { error: oauthError } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: window.location.origin,
+        redirectTo: `${window.location.origin}/`,
+        ...(isStandalone ? {} : {}),
       },
     });
     if (oauthError) setError(oauthError.message);
