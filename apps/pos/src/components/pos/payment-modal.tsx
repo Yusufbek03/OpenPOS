@@ -54,20 +54,35 @@ export function PaymentModal({ open, onClose, onCompleted }: PaymentModalProps) 
     try {
       const printContent = receiptRef.current;
       if (!printContent) { setPrintStatus('failed'); return; }
-      const printWindow = window.open('', '_blank', 'width=320,height=600');
-      if (!printWindow) { setPrintStatus('failed'); return; }
-      printWindow.document.write(`
+
+      const iframe = document.createElement('iframe');
+      iframe.style.position = 'fixed';
+      iframe.style.left = '-9999px';
+      iframe.style.top = '-9999px';
+      iframe.style.width = '80mm';
+      document.body.appendChild(iframe);
+
+      const doc = iframe.contentWindow?.document;
+      if (!doc) { setPrintStatus('failed'); return; }
+
+      doc.open();
+      doc.write(`
         <html><head><title>Чек</title>
         <style>
-          body { font-family: monospace; font-size: 12px; width: 280px; margin: 0 auto; padding: 10px; }
-          table { width: 100%; }
-          .total { font-size: 16px; font-weight: bold; }
-          @media print { body { width: 280px; } }
+          @page { size: 80mm auto; margin: 2mm; }
+          body { font-family: 'Courier New', monospace; font-size: 12px; margin: 0; padding: 4mm; width: 72mm; }
+          * { margin: 0; padding: 0; box-sizing: border-box; }
         </style></head><body>${printContent.innerHTML}</body></html>
       `);
-      printWindow.document.close();
-      printWindow.focus();
-      setTimeout(() => { printWindow.print(); printWindow.close(); setPrintStatus('success'); }, 500);
+      doc.close();
+
+      iframe.contentWindow?.focus();
+      setTimeout(() => {
+        try {
+          iframe.contentWindow?.print();
+        } catch {}
+        setTimeout(() => { document.body.removeChild(iframe); setPrintStatus('success'); }, 500);
+      }, 300);
     } catch { setPrintStatus('failed'); }
   };
 
