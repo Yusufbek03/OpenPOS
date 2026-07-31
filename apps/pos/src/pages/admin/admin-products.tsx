@@ -40,7 +40,7 @@ export function AdminProducts() {
     queryKey: ['admin-products', search],
     queryFn: async () => {
       const { data } = await api.get('/products', { params: { limit: 200, search: search || undefined } });
-      return data.products as Product[];
+      return (data.items || data.products || data) as Product[];
     },
   });
 

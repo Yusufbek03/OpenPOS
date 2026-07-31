@@ -9,7 +9,7 @@ export function useProducts(params?: { categoryId?: string; search?: string }) {
     queryFn: async () => {
       try {
         const { data } = await api.get('/products', { params: { ...params, limit: 200 } });
-        const products = data.products as Product[];
+        const products = (data.items || data.products || data) as Product[];
         await offlineStorage.products.save(products);
         return products;
       } catch {

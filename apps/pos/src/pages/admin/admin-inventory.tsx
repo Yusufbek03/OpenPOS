@@ -52,7 +52,7 @@ export function AdminInventory() {
     queryKey: ['admin-products-for-inventory'],
     queryFn: async () => {
       const { data } = await api.get('/products', { params: { limit: 500 } });
-      return data.products || [];
+      return (data.items || data.products || data) || [];
     },
   });
 
