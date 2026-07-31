@@ -1,6 +1,5 @@
 import type { Product } from '@/types';
 import { useCartStore } from '@/stores/cart-store';
-import { API_BASE } from '@/lib/api-config';
 
 interface ProductGridProps {
   products: Product[];

@@ -12,7 +12,6 @@ import { AdminGate } from '@/pages/admin/admin-gate';
 import { useAuthStore } from '@/stores/auth-store';
 import { useCartStore } from '@/stores/cart-store';
 import { ArrowLeft } from 'lucide-react';
-import { API_BASE } from '@/lib/api-config';
 import { useTheme } from '@/hooks/use-theme';
 
 interface PosPageProps {
