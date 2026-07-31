@@ -44,7 +44,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return error(res, `Upload failed: ${uploadError.message}`, 500, origin);
     }
 
-    return json(res, { url: `/uploads/${filename}`, filename }, 200, origin);
+    const { data: urlData } = supabase.storage
+      .from('uploads')
+      .getPublicUrl(filePath);
+
+    return json(res, { url: urlData.publicUrl, filename }, 200, origin);
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e);
     return error(res, msg, 500, origin);

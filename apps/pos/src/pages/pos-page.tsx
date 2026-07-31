@@ -168,7 +168,7 @@ export function PosPage({ showAdmin }: PosPageProps) {
                     }}
                   >
                     {cat.imageUrl ? (
-                      <img src={`${API_BASE}${cat.imageUrl}`} alt={cat.nameRu} style={{ width: 80, height: 80, borderRadius: 16, objectFit: 'cover' }} />
+                      <img src={{cat.imageUrl}} alt={cat.nameRu} style={{ width: 80, height: 80, borderRadius: 16, objectFit: 'cover' }} />
                     ) : cat.color ? (
                       <div style={{ width: 64, height: 64, borderRadius: 16, background: cat.color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         <span style={{ fontSize: 36 }}>{cat.icon || '📁'}</span>

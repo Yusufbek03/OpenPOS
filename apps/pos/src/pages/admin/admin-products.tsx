@@ -144,7 +144,7 @@ export function AdminProducts() {
                       e.target.value = '';
                     }} />
                   </label>
-                  {form.imageUrl && <img src={`${API_BASE}${form.imageUrl}`} alt="Preview" style={{ width: 48, height: 48, borderRadius: 8, objectFit: 'cover', border: '1px solid #E5E7EB' }} />}
+                  {form.imageUrl && <img src={form.imageUrl} alt="Preview" style={{ width: 48, height: 48, borderRadius: 8, objectFit: 'cover', border: '1px solid #E5E7EB' }} />}
                 </div>
               </div>
               <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14 }}>
@@ -179,7 +179,7 @@ export function AdminProducts() {
                 <tr key={p.id} style={{ borderBottom: '1px solid #F3F4F6' }}>
                   <td style={tdStyle}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      {p.imageUrl ? <img src={`${API_BASE}${p.imageUrl}`} alt="" style={{ width: 36, height: 36, borderRadius: 8, objectFit: 'cover' }} /> : <div style={{ width: 36, height: 36, borderRadius: 8, background: '#F3F4F6' }} />}
+                      {p.imageUrl ? <img src={p.imageUrl} alt="" style={{ width: 36, height: 36, borderRadius: 8, objectFit: 'cover' }} /> : <div style={{ width: 36, height: 36, borderRadius: 8, background: '#F3F4F6' }} />}
                       {p.nameRu}
                     </div>
                   </td>
