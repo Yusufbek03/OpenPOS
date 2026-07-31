@@ -11,7 +11,7 @@ export function RoleRouter() {
 
   return (
     <Suspense fallback={<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', color: '#6B7280' }}>Загрузка...</div>}>
-      {user.role === 'COOK' ? <KitchenPage /> : <PosPage showAdmin />}
+      {user.role === 'COOK' ? <KitchenPage /> : <PosPage />}
     </Suspense>
   );
 }

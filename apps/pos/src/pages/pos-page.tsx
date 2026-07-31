@@ -15,11 +15,9 @@ import { useTheme } from '@/hooks/use-theme';
 const AdminPanel = lazy(() => import('@/pages/admin/admin-panel').then(m => ({ default: m.AdminPanel })));
 const AdminGate = lazy(() => import('@/pages/admin/admin-gate').then(m => ({ default: m.AdminGate })));
 
-interface PosPageProps {
-  showAdmin?: boolean;
-}
+interface PosPageProps {}
 
-export function PosPage({ showAdmin }: PosPageProps) {
+export function PosPage(_props: PosPageProps) {
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [isOnline, setIsOnline] = useState(navigator.onLine);
