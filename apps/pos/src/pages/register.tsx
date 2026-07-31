@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { api } from '@/lib/api';
+import { useAuthStore } from '@/stores/auth-store';
 import { Mail, Phone, Eye, EyeOff, ArrowLeft, AlertCircle } from 'lucide-react';
 
 interface RegisterPageProps {
@@ -75,7 +76,7 @@ export function RegisterPage({ onBack }: RegisterPageProps) {
         localStorage.setItem('pos_access_token', res.data.accessToken);
         localStorage.setItem('pos_refresh_token', res.data.refreshToken);
         localStorage.setItem('pos_user', JSON.stringify(res.data.user));
-        window.location.reload();
+        useAuthStore.setState({ user: res.data.user, isAuthenticated: true });
       });
     } catch (err: any) {
       setError(err?.message || 'Ошибка верификации');

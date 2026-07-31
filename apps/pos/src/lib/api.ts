@@ -1,6 +1,12 @@
 import axios from 'axios';
 import { API_BASE } from './api-config';
 
+let onAuthExpired: (() => void) | null = null;
+
+export function setAuthExpiredCallback(cb: () => void) {
+  onAuthExpired = cb;
+}
+
 export const api = axios.create({
   baseURL: `${API_BASE}/api`,
   timeout: 15_000,
@@ -45,7 +51,12 @@ api.interceptors.response.use(
         } catch {
           localStorage.removeItem('pos_access_token');
           localStorage.removeItem('pos_refresh_token');
-          window.location.href = '/login';
+          localStorage.removeItem('pos_user');
+          if (onAuthExpired) {
+            onAuthExpired();
+          } else {
+            window.location.reload();
+          }
         }
       }
     }

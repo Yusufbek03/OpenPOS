@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/auth-store';
+import { setAuthExpiredCallback } from '@/lib/api';
 import { LoginPage } from '@/pages/login';
 import { RegisterPage } from '@/pages/register';
 import { RoleRouter } from '@/components/role-router';
@@ -34,6 +35,9 @@ export function App() {
   const [view, setView] = useState<'login' | 'register'>('login');
 
   useEffect(() => {
+    setAuthExpiredCallback(() => {
+      useAuthStore.setState({ user: null, isAuthenticated: false });
+    });
     syncSupabaseUser().then(() => loadUser().finally(() => setReady(true)));
   }, [loadUser]);
 

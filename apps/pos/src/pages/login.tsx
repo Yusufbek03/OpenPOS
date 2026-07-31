@@ -21,16 +21,34 @@ export function LoginPage({ onRegister }: LoginPageProps) {
 
   const handleGoogleLogin = async () => {
     setError('');
-    const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
-      (window.navigator as any).standalone === true;
-    const { error: oauthError } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/`,
-        ...(isStandalone ? {} : {}),
-      },
-    });
-    if (oauthError) setError(oauthError.message);
+    try {
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
+        (window.navigator as any).standalone === true;
+
+      const callbackUrl = `${window.location.origin}/`;
+
+      if (isStandalone) {
+        const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: {
+            redirectTo: callbackUrl,
+            skipBrowserRedirect: true,
+          },
+        });
+        if (oauthError) throw oauthError;
+        if (data?.url) {
+          window.location.href = data.url;
+        }
+      } else {
+        const { error: oauthError } = await supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: { redirectTo: callbackUrl },
+        });
+        if (oauthError) throw oauthError;
+      }
+    } catch (err: any) {
+      setError(err?.message || 'Ошибка входа через Google');
+    }
   };
 
   const handlePasswordLogin = async (e: React.FormEvent) => {
@@ -96,7 +114,7 @@ export function LoginPage({ onRegister }: LoginPageProps) {
       localStorage.setItem('pos_access_token', res.data.accessToken);
       localStorage.setItem('pos_refresh_token', res.data.refreshToken);
       localStorage.setItem('pos_user', JSON.stringify(res.data.user));
-      window.location.reload();
+      useAuthStore.setState({ user: res.data.user, isAuthenticated: true });
     } catch (err: any) {
       setError(err?.message || 'Ошибка верификации');
     } finally {

@@ -63,7 +63,7 @@ export function AdminGate({ onUnlock }: AdminGateProps) {
 
       const { error: oauthError } = await supabase.auth.signInWithOAuth({
         provider: 'google',
-        options: { redirectTo: window.location.origin },
+        options: { redirectTo: `${window.location.origin}/` },
       });
       if (oauthError) throw oauthError;
     } catch (err: any) {
