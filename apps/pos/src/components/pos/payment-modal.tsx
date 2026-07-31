@@ -2,7 +2,6 @@ import { useState, useRef } from 'react';
 import { X, Banknote, CreditCard, Smartphone, Printer, CheckCircle, AlertCircle, Plus, Minus } from 'lucide-react';
 import { useCartStore } from '@/stores/cart-store';
 import { useCreateOrder, useProcessPayment } from '@/hooks/use-order';
-import { api } from '@/lib/api';
 
 interface PaymentModalProps {
   open: boolean;
@@ -50,15 +49,26 @@ export function PaymentModal({ open, onClose, onCompleted }: PaymentModalProps) 
   const remaining = Math.max(0, total - totalPaid);
   const change = totalPaid > total ? totalPaid - total : 0;
 
-  const tryPrintReceipt = async (orderId: string) => {
+  const tryPrintReceipt = async (_orderId: string) => {
+    setPrintStatus('printing');
     try {
-      const { data: printers } = await api.get('/printers', { params: { department: 'CAFE' } });
-      const printerList = printers.printers || printers;
-      if (!Array.isArray(printerList) || printerList.length === 0) { setPrintStatus('no-printer'); return; }
-      setPrintStatus('printing');
-      const { data } = await api.post('/printers/print-receipt', { orderId, printerId: printerList[0].id });
-      setPrintStatus(data.success ? 'success' : 'failed');
-    } catch { setPrintStatus('no-printer'); }
+      const printContent = receiptRef.current;
+      if (!printContent) { setPrintStatus('failed'); return; }
+      const printWindow = window.open('', '_blank', 'width=320,height=600');
+      if (!printWindow) { setPrintStatus('failed'); return; }
+      printWindow.document.write(`
+        <html><head><title>Чек</title>
+        <style>
+          body { font-family: monospace; font-size: 12px; width: 280px; margin: 0 auto; padding: 10px; }
+          table { width: 100%; }
+          .total { font-size: 16px; font-weight: bold; }
+          @media print { body { width: 280px; } }
+        </style></head><body>${printContent.innerHTML}</body></html>
+      `);
+      printWindow.document.close();
+      printWindow.focus();
+      setTimeout(() => { printWindow.print(); printWindow.close(); setPrintStatus('success'); }, 500);
+    } catch { setPrintStatus('failed'); }
   };
 
   const updatePayment = (index: number, method: string) => {
