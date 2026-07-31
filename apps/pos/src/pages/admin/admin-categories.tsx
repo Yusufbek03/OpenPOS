@@ -112,9 +112,13 @@ export function AdminCategories() {
           <div key={c.id} style={{ background: '#FFFFFF', borderRadius: 16, border: '1px solid #E5E7EB', padding: 16 }}>
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <div style={{ width: 40, height: 40, borderRadius: 12, background: c.color || '#E5E7EB', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>
-                  {c.icon || '📁'}
-                </div>
+                {c.imageUrl ? (
+                  <img src={c.imageUrl} alt={c.nameRu} style={{ width: 40, height: 40, borderRadius: 12, objectFit: 'cover' }} />
+                ) : (
+                  <div style={{ width: 40, height: 40, borderRadius: 12, background: c.color || '#E5E7EB', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>
+                    {c.icon || '📁'}
+                  </div>
+                )}
                 <div>
                   <h3 style={{ fontWeight: 500, fontSize: 15 }}>{c.nameRu}</h3>
                   <p style={{ fontSize: 12, color: '#6B7280', marginTop: 2 }}>{c._count?.products ?? 0} товаров</p>

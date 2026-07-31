@@ -27,7 +27,6 @@ export function PosPage({ showAdmin }: PosPageProps) {
   const [showCloseRegister, setShowCloseRegister] = useState(false);
   const [isLocked, setIsLocked] = useState(false);
   const [view, setView] = useState<'pos' | 'admin-gate' | 'admin'>('pos');
-  const [adminRevealed, setAdminRevealed] = useState(false);
   const queryClient = useQueryClient();
   const { c } = useTheme();
 
@@ -128,11 +127,11 @@ export function PosPage({ showAdmin }: PosPageProps) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleBarcodeScan]);
 
-  if (isAdmin && view === 'admin-gate' && showAdmin) {
+  if (isAdmin && view === 'admin-gate') {
     return <Suspense fallback={<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', color: '#6B7280' }}>Загрузка...</div>}><AdminGate onUnlock={() => setView('admin')} /></Suspense>;
   }
 
-  if (isAdmin && view === 'admin' && showAdmin) {
+  if (isAdmin && view === 'admin') {
     return <Suspense fallback={<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', color: '#6B7280' }}>Загрузка...</div>}><AdminPanel onBackToPos={() => setView('pos')} /></Suspense>;
   }
 
@@ -148,9 +147,9 @@ export function PosPage({ showAdmin }: PosPageProps) {
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         isOnline={isOnline}
-        onAdminClick={isAdmin && (showAdmin || adminRevealed) ? () => setView('admin-gate') : undefined}
+        onAdminClick={isAdmin ? () => setView('admin-gate') : undefined}
         onCloseRegister={() => setShowCloseRegister(true)}
-        onLogoTripleTap={() => { if (isAdmin) setAdminRevealed(true); }}
+        onLogoTripleTap={() => { if (isAdmin) setView('admin-gate'); }}
       />
 
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
