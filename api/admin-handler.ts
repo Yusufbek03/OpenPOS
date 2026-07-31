@@ -55,6 +55,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
   if (entityPath === 'tables/zones') return handleTableZones(res, origin);
   if (entityPath === 'tables/stats') return handleTableStats(res, origin);
+  if (entityPath === 'payments') return handlePayment(req, res, origin, payload);
 
   const table = ENTITY_TABLES[baseEntity];
   if (!table) return error(res, `Unknown entity: ${entityPath}`, 400, origin);
@@ -355,4 +356,27 @@ async function handleTableStats(res: VercelResponse, origin: string | undefined)
   const stats: Record<string, number> = {};
   for (const row of (data || []) as Array<{ status: string }>) { stats[row.status] = (stats[row.status] || 0) + 1; }
   return json(res, stats, 200, origin);
+}
+
+async function handlePayment(req: VercelRequest, res: VercelResponse, origin: string | undefined, payload: any) {
+  if (req.method !== 'POST') return error(res, 'POST only', 405, origin);
+  const { orderId, method, amount } = req.body;
+  if (!orderId || !method || !amount) return error(res, 'orderId, method, amount обязательны', 400, origin);
+
+  const { data: payment, error: e } = await supabase.from('payments').insert({
+    orderId, method, amount, status: 'COMPLETED', cashierId: payload.sub,
+  }).select().single();
+  if (e) return error(res, e.message, 500, origin);
+
+  const { data: orderPayments } = await supabase.from('payments').select('amount').eq('orderId', orderId);
+  const totalPaid = (orderPayments || []).reduce((s: number, p: any) => s + Number(p.amount), 0);
+  const { data: order } = await supabase.from('orders').select('total').eq('id', orderId).single();
+  const orderTotal = order?.total || 0;
+
+  let orderStatus = 'PARTIALLY_PAID';
+  if (totalPaid >= orderTotal) orderStatus = 'PAID';
+
+  await supabase.from('orders').update({ status: orderStatus, paidAt: orderStatus === 'PAID' ? new Date().toISOString() : null }).eq('id', orderId);
+
+  return json(res, { ...payment, orderStatus, totalPaid }, 201, origin);
 }

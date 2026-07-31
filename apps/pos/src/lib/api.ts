@@ -24,6 +24,8 @@ api.interceptors.request.use((config) => {
     config.url = `/kitchen-handler?_path=${encodeURIComponent(url.substring(9))}`;
   } else if (url === '/kitchen') {
     config.url = '/kitchen-handler';
+  } else if (url === '/payments') {
+    config.url = '/admin-handler?_path=payments';
   }
 
   const token = localStorage.getItem('pos_access_token');
