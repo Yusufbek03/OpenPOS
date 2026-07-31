@@ -364,7 +364,7 @@ async function handlePayment(req: VercelRequest, res: VercelResponse, origin: st
   if (!orderId || !method || !amount) return error(res, 'orderId, method, amount обязательны', 400, origin);
 
   const { data: payment, error: e } = await supabase.from('payments').insert({
-    orderId, method, amount, status: 'COMPLETED',
+    orderId, method, amount, status: 'COMPLETED', processedBy: payload.sub,
   }).select().single();
   if (e) return error(res, e.message, 500, origin);
 
