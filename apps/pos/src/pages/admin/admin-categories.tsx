@@ -145,8 +145,15 @@ export function AdminCategories() {
               const token = localStorage.getItem('pos_access_token');
               const res = await fetch(`${API_BASE}/api/uploads/image`, { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: fd });
               const data = await res.json();
-              if (data.url) setForm((prev) => ({ ...prev, imageUrl: data.url }));
-            } catch { alert('Ошибка загрузки'); }
+              if (data.url) {
+                setForm((prev) => ({ ...prev, imageUrl: data.url }));
+              } else {
+                console.error('Category upload failed:', data);
+              }
+            } catch (e) {
+              console.error('Category upload error:', e);
+              alert('Ошибка загрузки фото');
+            }
           }}
         />
       )}

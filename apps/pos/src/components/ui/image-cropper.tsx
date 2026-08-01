@@ -59,7 +59,11 @@ export function ImageCropper({ file, onCropped, onCancel }: ImageCropperProps) {
     const canvas = canvasRef.current;
     if (!canvas) return;
     canvas.toBlob((blob) => {
-      if (blob) onCropped(blob);
+      if (blob) {
+        onCropped(blob);
+      } else {
+        console.error('ImageCropper: toBlob returned null — canvas may be empty');
+      }
     }, 'image/jpeg', 0.9);
   };
 
