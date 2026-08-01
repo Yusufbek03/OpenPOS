@@ -1,4 +1,4 @@
-import { cn } from '@openpos/ui';
+import { cn } from '@/lib/cn';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'ghost' | 'danger' | 'success';

@@ -67,7 +67,7 @@ export function KitchenPage() {
       const { data } = await api.get('/kitchen/tickets');
       return (data.tickets || data) as KitchenTicket[];
     },
-    refetchInterval: 5_000,
+    refetchInterval: connected ? false : 5_000,
   });
 
   useEffect(() => {

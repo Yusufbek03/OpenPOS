@@ -1,4 +1,4 @@
-import { cn } from '@openpos/ui';
+import { cn } from '@/lib/cn';
 
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
