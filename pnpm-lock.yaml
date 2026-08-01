@@ -378,15 +378,6 @@ importers:
 
   apps/pos:
     dependencies:
-      '@openpos/config':
-        specifier: workspace:*
-        version: link:../../packages/config
-      '@openpos/shared':
-        specifier: workspace:*
-        version: link:../../packages/shared
-      '@openpos/ui':
-        specifier: workspace:*
-        version: link:../../packages/ui
       '@supabase/supabase-js':
         specifier: ^2.110.8
         version: 2.110.8
@@ -396,6 +387,9 @@ importers:
       axios:
         specifier: ^1.7.9
         version: 1.18.1(debug@4.4.3(supports-color@7.2.0))(supports-color@7.2.0)
+      clsx:
+        specifier: ^2.1.1
+        version: 2.1.1
       lucide-react:
         specifier: ^0.468.0
         version: 0.468.0(react@19.2.8)
@@ -408,6 +402,9 @@ importers:
       socket.io-client:
         specifier: ^4.8.1
         version: 4.8.3(supports-color@7.2.0)
+      tailwind-merge:
+        specifier: ^2.6.0
+        version: 2.6.1
       zustand:
         specifier: ^5.0.3
         version: 5.0.14(@types/react@19.2.17)(react@19.2.8)

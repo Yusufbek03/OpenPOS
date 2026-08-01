@@ -1,9 +1,8 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
-import { Plus, Edit2, Trash2, X, Upload } from 'lucide-react';
+import { Plus, Edit2, Trash2, X, Upload, Loader2 } from 'lucide-react';
 import { API_BASE } from '@/lib/api-config';
-import { ImageCropper } from '@/components/ui/image-cropper';
 
 interface Category {
   id: string; name: string; nameRu: string; nameEn: string; nameUz: string;
@@ -21,7 +20,8 @@ export function AdminCategories() {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Category | null>(null);
   const [form, setForm] = useState({ nameRu: '', nameEn: '', nameUz: '', icon: '', color: '#3B82F6', imageUrl: '', sortOrder: 0, isActive: true });
-  const [cropFile, setCropFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: categories = [], isLoading } = useQuery({
     queryKey: ['admin-categories'],
@@ -44,6 +44,30 @@ export function AdminCategories() {
     mutationFn: (id: string) => api.delete(`/categories/${id}`),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['admin-categories'] }); queryClient.invalidateQueries({ queryKey: ['categories'] }); },
   });
+
+  const uploadFile = async (file: File) => {
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append('file', file, file.name || 'image.jpg');
+      const token = localStorage.getItem('pos_access_token');
+      const res = await fetch(`${API_BASE}/api/uploads/image`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: fd,
+      });
+      const data = await res.json();
+      if (data.url) {
+        setForm((prev) => ({ ...prev, imageUrl: data.url }));
+      } else {
+        alert('Ошибка загрузки: ' + (data.error || 'Неизвестная ошибка'));
+      }
+    } catch (e) {
+      alert('Ошибка загрузки фото');
+    } finally {
+      setUploading(false);
+    }
+  };
 
   return (
     <div style={pageStyle}>
@@ -73,16 +97,16 @@ export function AdminCategories() {
               </div>
               <div>
                 <label style={labelStyle}>Фото</label>
+                <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) uploadFile(file);
+                  e.target.value = '';
+                }} />
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                  <label style={{ ...btnPrimary, cursor: 'pointer', flex: 1, justifyContent: 'center', height: 40 }}>
-                    <Upload style={{ width: 16, height: 16 }} />
-                    Загрузить фото
-                    <input type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) setCropFile(file);
-                      e.target.value = '';
-                    }} />
-                  </label>
+                  <button onClick={() => fileInputRef.current?.click()} disabled={uploading} style={{ ...btnPrimary, flex: 1, justifyContent: 'center', height: 40, opacity: uploading ? 0.6 : 1 }}>
+                    {uploading ? <Loader2 style={{ width: 16, height: 16, animation: 'spin 1s linear infinite' }} /> : <Upload style={{ width: 16, height: 16 }} />}
+                    {uploading ? 'Загрузка...' : 'Загрузить фото'}
+                  </button>
                   {form.imageUrl && (
                     <button onClick={() => setForm({ ...form, imageUrl: '' })} style={{ padding: 6, background: 'none', border: 'none', cursor: 'pointer', color: '#EF4444' }}>
                       <Trash2 style={{ width: 16, height: 16 }} />
@@ -99,7 +123,7 @@ export function AdminCategories() {
                 <div><label style={labelStyle}>Порядок</label><input type="number" value={form.sortOrder} onChange={(e) => setForm({ ...form, sortOrder: Number(e.target.value) })} style={inputStyle} /></div>
                 <div style={{ display: 'flex', alignItems: 'flex-end', paddingBottom: 2 }}><label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14 }}><input type="checkbox" checked={form.isActive} onChange={(e) => setForm({ ...form, isActive: e.target.checked })} style={{ width: 16, height: 16 }} /> Активна</label></div>
               </div>
-              <button onClick={() => saveCategory.mutate(form)} disabled={!form.nameRu} style={{ ...btnPrimary, width: '100%', height: 44, justifyContent: 'center', opacity: !form.nameRu ? 0.5 : 1 }}>
+              <button onClick={() => saveCategory.mutate(form)} disabled={!form.nameRu || uploading} style={{ ...btnPrimary, width: '100%', height: 44, justifyContent: 'center', opacity: !form.nameRu || uploading ? 0.5 : 1 }}>
                 {editing ? 'Сохранить' : 'Создать'}
               </button>
             </div>
@@ -132,31 +156,6 @@ export function AdminCategories() {
           </div>
         ))}
       </div>
-
-      {cropFile && (
-        <ImageCropper
-          file={cropFile}
-          onCancel={() => setCropFile(null)}
-          onCropped={async (blob) => {
-            setCropFile(null);
-            const fd = new FormData();
-            fd.append('file', blob, 'image.jpg');
-            try {
-              const token = localStorage.getItem('pos_access_token');
-              const res = await fetch(`${API_BASE}/api/uploads/image`, { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: fd });
-              const data = await res.json();
-              if (data.url) {
-                setForm((prev) => ({ ...prev, imageUrl: data.url }));
-              } else {
-                console.error('Category upload failed:', data);
-              }
-            } catch (e) {
-              console.error('Category upload error:', e);
-              alert('Ошибка загрузки фото');
-            }
-          }}
-        />
-      )}
     </div>
   );
 }
