@@ -32,7 +32,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     for (const item of items) subtotal += item.quantity * item.unitPrice;
     const total = subtotal - (discount ?? 0);
     const orderNumber = generateOrderNumber();
-    const branchId = (payload.branchId as string) || null;
+    const branchId = (payload.branchId as string) || 'c0000001-0000-0000-0000-000000000001';
     const { data: order, error: e } = await supabase.from('orders').insert({
       orderNumber, status: 'PENDING', cashierId: cashierId ?? payload.sub, waiterId, tableId, customerId,
       subtotal, discount: discount ?? 0, tax: 0, total, notes, branchId,
