@@ -1,7 +1,10 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
-import { DollarSign, CreditCard, Smartphone, ArrowDownCircle, ArrowUpCircle, Plus, X, Lock, AlertTriangle, Calendar, TrendingUp, ShoppingCart } from 'lucide-react';
+import { DollarSign, CreditCard, Smartphone, ArrowDownCircle, ArrowUpCircle, Plus, X, Lock, Calendar, TrendingUp, ShoppingCart } from 'lucide-react';
+import { useShiftStore } from '@/stores/shift-store';
+import { OpenShiftModal } from '@/components/pos/open-shift-modal';
+import { CloseShiftModal } from '@/components/pos/close-shift-modal';
 
 interface PaymentByMethod {
   _sum: { amount: string | number } | null;
@@ -29,8 +32,10 @@ export function AdminCashReport() {
   const queryClient = useQueryClient();
   const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [showOp, setShowOp] = useState(false);
-  const [showClose, setShowClose] = useState(false);
+  const [showOpenShift, setShowOpenShift] = useState(false);
+  const [showCloseShift, setShowCloseShift] = useState(false);
   const [opForm, setOpForm] = useState<{ type: 'CASH_IN' | 'CASH_OUT'; amount: string; reason: string }>({ type: 'CASH_IN', amount: '', reason: '' });
+  const { currentShift, fetchCurrentShift } = useShiftStore();
 
   const { data: dashboard } = useQuery({
     queryKey: ['cash-dashboard', selectedDate],
@@ -51,29 +56,6 @@ export function AdminCashReport() {
         return [] as RegisterOp[];
       }
     },
-  });
-
-  const { data: openOrdersData, isLoading: isLoadingOpen } = useQuery({
-    queryKey: ['open-orders-count'],
-    queryFn: async () => {
-      const { data } = await api.get('/orders/open');
-      return data as { count: number };
-    },
-    enabled: showClose,
-  });
-
-  const { data: openOrdersList = [], isLoading: isLoadingList } = useQuery({
-    queryKey: ['open-orders-list'],
-    queryFn: async () => {
-      const { data } = await api.get('/orders/open/list');
-      return data as Array<{
-        id: string; orderNumber: string; status: string;
-        total: number; createdAt: string;
-        cashier: { fullName: string };
-        restaurantTable: { name: string } | null;
-      }>;
-    },
-    enabled: showClose,
   });
 
   const createOp = useMutation({
@@ -139,9 +121,15 @@ export function AdminCashReport() {
           <button onClick={() => setShowOp(true)} style={{ ...btnPrimary, background: '#F59E0B' }}>
             <Plus style={{ width: 16, height: 16 }} /> Операция
           </button>
-          <button onClick={() => setShowClose(true)} style={{ ...btnPrimary, background: '#DC2626' }}>
-            <Lock style={{ width: 16, height: 16 }} /> Закрыть кассу
-          </button>
+          {currentShift ? (
+            <button onClick={() => setShowCloseShift(true)} style={{ ...btnPrimary, background: '#DC2626' }}>
+              <Lock style={{ width: 16, height: 16 }} /> Закрыть смену
+            </button>
+          ) : (
+            <button onClick={() => setShowOpenShift(true)} style={{ ...btnPrimary, background: '#22C55E' }}>
+              <Lock style={{ width: 16, height: 16 }} /> Открыть смену
+            </button>
+          )}
         </div>
       </div>
 
@@ -283,53 +271,8 @@ export function AdminCashReport() {
         </div>
       )}
 
-      {showClose && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.5)' }}>
-          <div style={{ background: '#FFFFFF', borderRadius: 16, width: '100%', maxWidth: 500, margin: '0 16px', boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid #E5E7EB' }}>
-              <h2 style={{ fontSize: 16, fontWeight: 600 }}>Закрытие кассы</h2>
-              <button onClick={() => setShowClose(false)} style={{ padding: 4, background: 'none', border: 'none', cursor: 'pointer', borderRadius: 6 }}><X style={{ width: 20, height: 20 }} /></button>
-            </div>
-            <div style={{ padding: 20 }}>
-              {(isLoadingOpen || isLoadingList) ? (
-                <div style={{ textAlign: 'center', padding: '32px 0' }}>
-                  <div style={{ width: 32, height: 32, border: '3px solid #2563EB', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.6s linear infinite', margin: '0 auto 12px' }} />
-                  <p style={{ color: '#6B7280', fontSize: 14 }}>Проверка...</p>
-                </div>
-              ) : (openOrdersData?.count ?? 0) > 0 ? (
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', background: '#FEF3C7', borderRadius: 10, marginBottom: 16 }}>
-                    <AlertTriangle style={{ width: 20, height: 20, color: '#D97706', flexShrink: 0 }} />
-                    <div>
-                      <p style={{ fontWeight: 600, color: '#92400E' }}>Невозможно закрыть кассу</p>
-                      <p style={{ fontSize: 13, color: '#A16207' }}>Есть {openOrdersData?.count ?? 0} незакрытых чеков.</p>
-                    </div>
-                  </div>
-                  <div style={{ maxHeight: 240, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    {openOrdersList.map((o) => (
-                      <div key={o.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: '#F9FAFB', borderRadius: 10, border: '1px solid #E5E7EB' }}>
-                        <div>
-                          <p style={{ fontWeight: 500, fontSize: 14 }}>{o.orderNumber}</p>
-                          <p style={{ fontSize: 12, color: '#6B7280' }}>{o.restaurantTable?.name || 'Без стола'} · {o.cashier.fullName}</p>
-                        </div>
-                        <p style={{ fontWeight: 600 }}>{Number(o.total).toLocaleString('uz-UZ')} сўм</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <div style={{ textAlign: 'center' }}>
-                  <Lock style={{ width: 28, height: 28, color: '#22C55E', marginBottom: 8 }} />
-                  <p style={{ fontWeight: 600, marginBottom: 16 }}>Все чеки закрыты. Можно закрыть кассу.</p>
-                  <button style={{ ...btnPrimary, width: '100%', height: 44, justifyContent: 'center', background: '#DC2626' }}>
-                    <Lock style={{ width: 16, height: 16 }} /> Подтвердить закрытие
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      <OpenShiftModal open={showOpenShift} onClose={() => { setShowOpenShift(false); fetchCurrentShift(); }} />
+      <CloseShiftModal open={showCloseShift} shift={currentShift} onClose={() => { setShowCloseShift(false); fetchCurrentShift(); }} />
     </div>
   );
 }
