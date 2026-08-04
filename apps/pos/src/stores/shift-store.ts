@@ -31,7 +31,7 @@ interface ShiftState {
 
 export const useShiftStore = create<ShiftState>()(
   persist(
-    (set, get) => ({
+    (set, _get) => ({
       currentShift: null,
       isLoading: false,
 

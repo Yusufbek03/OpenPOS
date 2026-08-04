@@ -113,7 +113,7 @@ export function CloseShiftModal({ open, shift, onClose }: CloseShiftModalProps) 
             <p style={{ fontWeight: 600, fontSize: 16, color: c.text, marginBottom: 4 }}>Смена закрыта</p>
             <div style={{ textAlign: 'left', marginTop: 16, padding: 16, background: c.bgSecondary, borderRadius: 12, fontSize: 13 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}><span style={{ color: c.textSecondary }}>Продажи:</span><span style={{ fontWeight: 600, color: c.text }}>{Number(result.report.totalSales || 0).toLocaleString('ru-RU')} сум</span></div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}><span style={{ color: c.textSecondary }}>Заказов:</span><span style={{ color: c.text }}>{result.report.totalOrders || 0}</span></div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}><span style={{ color: c.textSecondary }}>Заказов:</span><span style={{ color: c.text }}>{String(result.report.totalOrders || 0)}</span></div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}><span style={{ color: c.textSecondary }}>Наличные:</span><span style={{ color: c.text }}>{Number(result.report.totalCash || 0).toLocaleString('ru-RU')} сум</span></div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}><span style={{ color: c.textSecondary }}>Карта:</span><span style={{ color: c.text }}>{Number(result.report.totalCard || 0).toLocaleString('ru-RU')} сум</span></div>
               {result.report.difference != null && (

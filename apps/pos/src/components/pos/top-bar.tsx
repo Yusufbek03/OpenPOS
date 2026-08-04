@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Search, Users, LogOut, Wifi, WifiOff, Settings, Sun, Moon, Lock, Download, Wallet, Calendar } from 'lucide-react';
+import { Search, Users, LogOut, Wifi, WifiOff, Settings, Sun, Moon, Download, Wallet, Calendar } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth-store';
 import { useTheme } from '@/hooks/use-theme';
 import { useShiftStore } from '@/stores/shift-store';
