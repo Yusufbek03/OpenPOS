@@ -1,4 +1,4 @@
-const CACHE_NAME = 'openpos-v3';
+const CACHE_NAME = 'openpos-v4';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -43,6 +43,11 @@ self.addEventListener('fetch', (event) => {
         });
       })
     );
+    return;
+  }
+
+  if (url.pathname.endsWith('.js') || url.pathname.endsWith('.css')) {
+    event.respondWith(fetch(event.request));
     return;
   }
 
