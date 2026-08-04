@@ -11,7 +11,6 @@ interface TopBarProps {
   onSearchChange: (query: string) => void;
   isOnline: boolean;
   onAdminClick?: () => void;
-  onCloseRegister?: () => void;
   onLogoTripleTap?: () => void;
 }
 

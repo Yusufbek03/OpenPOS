@@ -4,7 +4,6 @@ import { TopBar } from '@/components/pos/top-bar';
 import { ProductGrid } from '@/components/pos/product-grid';
 import { Cart } from '@/components/pos/cart';
 import { PaymentModal } from '@/components/pos/payment-modal';
-import { CloseRegisterModal } from '@/components/pos/close-register-modal';
 import { LockScreen } from '@/components/pos/lock-screen';
 import { useProducts, useProductSearch, useCategories } from '@/hooks/use-pos-data';
 import { useAuthStore } from '@/stores/auth-store';
@@ -22,7 +21,6 @@ export function PosPage(_props: PosPageProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [showPayment, setShowPayment] = useState(false);
-  const [showCloseRegister, setShowCloseRegister] = useState(false);
   const [isLocked, setIsLocked] = useState(false);
   const [view, setView] = useState<'pos' | 'admin-gate' | 'admin'>('pos');
   const queryClient = useQueryClient();
@@ -146,7 +144,6 @@ export function PosPage(_props: PosPageProps) {
         onSearchChange={setSearchQuery}
         isOnline={isOnline}
         onAdminClick={isAdmin ? () => setView('admin-gate') : undefined}
-        onCloseRegister={() => setShowCloseRegister(true)}
         onLogoTripleTap={() => { if (isAdmin) setView('admin-gate'); }}
       />
 
@@ -216,7 +213,6 @@ export function PosPage(_props: PosPageProps) {
       </div>
 
       <PaymentModal open={showPayment} onClose={() => setShowPayment(false)} onCompleted={() => {}} />
-      <CloseRegisterModal open={showCloseRegister} onClose={() => setShowCloseRegister(false)} onLock={() => setIsLocked(true)} />
     </div>
   );
 }
