@@ -9,6 +9,7 @@ export const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 const ALLOWED_ORIGINS = [
   'https://openpos-terminal.vercel.app',
+  'https://*.vercel.app',
   'http://localhost:5173',
   'http://localhost:5174',
 ];

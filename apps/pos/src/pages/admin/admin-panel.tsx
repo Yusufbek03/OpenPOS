@@ -17,8 +17,9 @@ const AdminSettings = lazy(() => import('./admin-settings').then(m => ({ default
 const AdminAuditLog = lazy(() => import('./admin-audit').then(m => ({ default: m.AdminAuditLog })));
 const AdminTables = lazy(() => import('./admin-tables').then(m => ({ default: m.AdminTables })));
 const AdminRemovedItems = lazy(() => import('./admin-removed-items').then(m => ({ default: m.AdminRemovedItems })));
+const AdminReports = lazy(() => import('./admin-reports').then(m => ({ default: m.AdminReports })));
 
-type AdminView = 'dashboard' | 'products' | 'categories' | 'orders' | 'employees' | 'printers' | 'stations' | 'customers' | 'inventory' | 'suppliers' | 'settings' | 'audit' | 'cash-report' | 'tables' | 'pos' | 'removed-items';
+type AdminView = 'dashboard' | 'products' | 'categories' | 'orders' | 'employees' | 'printers' | 'stations' | 'customers' | 'inventory' | 'suppliers' | 'settings' | 'audit' | 'cash-report' | 'tables' | 'pos' | 'removed-items' | 'reports';
 
 const NAV_ITEMS = [
   { id: 'pos' as AdminView, label: 'Касса', icon: ArrowLeft },
@@ -35,6 +36,7 @@ const NAV_ITEMS = [
   { id: 'suppliers' as AdminView, label: 'Поставщики', icon: Truck },
   { id: 'settings' as AdminView, label: 'Настройки', icon: Settings },
   { id: 'audit' as AdminView, label: 'Аудит', icon: Shield },
+  { id: 'reports' as AdminView, label: 'Отчёты', icon: BarChart3 },
   { id: 'cash-report' as AdminView, label: 'Отчёт кассы', icon: BarChart3 },
   { id: 'removed-items' as AdminView, label: 'Удалённые', icon: Trash2 },
 ];
@@ -116,6 +118,7 @@ export function AdminPanel({ onBackToPos }: AdminPanelProps) {
           {view === 'settings' && <AdminSettings />}
           {view === 'audit' && <AdminAuditLog />}
           {view === 'cash-report' && <AdminCashReport />}
+          {view === 'reports' && <AdminReports />}
           {view === 'removed-items' && <AdminRemovedItems />}
         </Suspense>
       </main>

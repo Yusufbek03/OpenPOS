@@ -37,6 +37,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   if (entityPath === 'reports/dashboard') return handleDashboard(req, res, origin);
   if (entityPath === 'reports/clear-all') return handleClearAll(res, origin);
+  if (entityPath === 'reports/daily') return handleDailyReport(req, res, origin);
+  if (entityPath === 'reports/profit') return handleProfitReport(req, res, origin);
   if (entityPath === 'audit') return handleAudit(req, res, origin);
   if (entityPath === 'register-ops') return handleRegisterOps(req, res, origin, payload);
   if (entityPath === 'inventory') return handleInventory(req, res, origin);
@@ -379,4 +381,107 @@ async function handlePayment(req: VercelRequest, res: VercelResponse, origin: st
   await supabase.from('orders').update({ status: orderStatus, paidAt: orderStatus === 'PAID' ? new Date().toISOString() : null }).eq('id', orderId);
 
   return json(res, { ...payment, orderStatus, totalPaid }, 201, origin);
+}
+
+async function handleDailyReport(req: VercelRequest, res: VercelResponse, origin: string | undefined) {
+  const { from, to } = req.query;
+  const now = new Date();
+  const start = from ? new Date(String(from)) : new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const end = to ? new Date(String(to) + 'T23:59:59.999Z') : new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+
+  const { data: orders } = await supabase
+    .from('orders')
+    .select('id, status, total, discount, tax, createdAt, items:order_items(quantity, total, product:products(name, nameRu, cost)), payments:payments(method, amount)')
+    .is('deletedAt', null);
+
+  const allOrders = (orders || []) as Record<string, unknown>[];
+  const dayOrders = allOrders.filter((o) => {
+    const d = new Date(o.createdAt as string);
+    return d >= start && d <= end;
+  });
+
+  const completedOrders = dayOrders.filter((o) => o.status === 'COMPLETED' || o.status === 'PAID');
+  const totalSales = completedOrders.reduce((s, o) => s + Number(o.total || 0), 0);
+  const totalDiscount = completedOrders.reduce((s, o) => s + Number(o.discount || 0), 0);
+  const totalTax = completedOrders.reduce((s, o) => s + Number(o.tax || 0), 0);
+  const totalItems = completedOrders.reduce((s, o) => {
+    return s + ((o.items || []) as Record<string, unknown>[]).reduce((is2, i) => is2 + Number(i.quantity || 0), 0);
+  }, 0);
+
+  const paymentMethods: Record<string, number> = {};
+  for (const o of completedOrders) {
+    for (const p of ((o.payments || []) as Record<string, unknown>[])) {
+      const method = (p.method as string) || 'UNKNOWN';
+      paymentMethods[method] = (paymentMethods[method] || 0) + Number(p.amount || 0);
+    }
+  }
+
+  const methodLabels: Record<string, string> = { CASH: 'Наличные', CARD: 'Карта', CLICK: 'Click', PAYME: 'Payme', UZUM_BANK: 'Uzum Bank' };
+  const paymentBreakdown = Object.entries(paymentMethods).map(([method, amount]) => ({
+    method, label: methodLabels[method] || method, amount,
+    percentage: totalSales > 0 ? Math.round((amount / totalSales) * 100) : 0,
+  }));
+
+  return json(res, {
+    period: { from: start.toISOString(), to: end.toISOString() },
+    totalOrders: completedOrders.length, totalSales, totalDiscount, totalTax, totalItems,
+    avgCheck: completedOrders.length > 0 ? Math.round(totalSales / completedOrders.length) : 0,
+    paymentBreakdown,
+  }, 200, origin);
+}
+
+async function handleProfitReport(req: VercelRequest, res: VercelResponse, origin: string | undefined) {
+  const { from, to } = req.query;
+  const now = new Date();
+  const start = from ? new Date(String(from)) : new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const end = to ? new Date(String(to) + 'T23:59:59.999Z') : new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+
+  const { data: orders } = await supabase
+    .from('orders')
+    .select('id, status, total, createdAt, items:order_items(quantity, total, productId, product:products(name, nameRu, cost, price))')
+    .is('deletedAt', null);
+
+  const allOrders = (orders || []) as Record<string, unknown>[];
+  const dayOrders = allOrders.filter((o) => {
+    const d = new Date(o.createdAt as string);
+    return d >= start && d <= end;
+  });
+
+  const completedOrders = dayOrders.filter((o) => o.status === 'COMPLETED' || o.status === 'PAID');
+  let totalRevenue = 0;
+  let totalCost = 0;
+  let totalItems = 0;
+  const productProfit = new Map<string, { name: string; quantity: number; revenue: number; cost: number; profit: number }>();
+
+  for (const o of completedOrders) {
+    totalRevenue += Number(o.total || 0);
+    for (const item of ((o.items || []) as Record<string, unknown>[])) {
+      const qty = Number(item.quantity || 0);
+      const revenue = Number(item.total || 0);
+      const product = item.product as Record<string, unknown> | undefined;
+      const unitCost = Number(product?.cost || 0);
+      totalCost += qty * unitCost;
+      totalItems += qty;
+
+      const key = item.productId as string;
+      const existing = productProfit.get(key) || {
+        name: (product?.nameRu as string) || (product?.name as string) || key.slice(0, 8),
+        quantity: 0, revenue: 0, cost: 0, profit: 0,
+      };
+      existing.quantity += qty;
+      existing.revenue += revenue;
+      existing.cost += qty * unitCost;
+      existing.profit += revenue - qty * unitCost;
+      productProfit.set(key, existing);
+    }
+  }
+
+  const topProducts = Array.from(productProfit.values()).sort((a, b) => b.profit - a.profit).slice(0, 15);
+
+  return json(res, {
+    period: { from: start.toISOString(), to: end.toISOString() },
+    totalRevenue, totalCost, totalProfit: totalRevenue - totalCost,
+    profitMargin: totalRevenue > 0 ? Math.round(((totalRevenue - totalCost) / totalRevenue) * 100) : 0,
+    totalItems, totalOrders: completedOrders.length, topProducts,
+  }, 200, origin);
 }
