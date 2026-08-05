@@ -114,8 +114,18 @@ export function CloseShiftModal({ open, shift, onClose }: CloseShiftModalProps) 
             <div style={{ textAlign: 'left', marginTop: 16, padding: 16, background: c.bgSecondary, borderRadius: 12, fontSize: 13 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}><span style={{ color: c.textSecondary }}>Продажи:</span><span style={{ fontWeight: 600, color: c.text }}>{Number(result.report.totalSales || 0).toLocaleString('ru-RU')} сум</span></div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}><span style={{ color: c.textSecondary }}>Заказов:</span><span style={{ color: c.text }}>{String(result.report.totalOrders || 0)}</span></div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}><span style={{ color: c.textSecondary }}>Наличные:</span><span style={{ color: c.text }}>{Number(result.report.totalCash || 0).toLocaleString('ru-RU')} сум</span></div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}><span style={{ color: c.textSecondary }}>Карта:</span><span style={{ color: c.text }}>{Number(result.report.totalCard || 0).toLocaleString('ru-RU')} сум</span></div>
+              <div style={{ borderTop: `1px solid ${c.border}`, margin: '6px 0', paddingTop: 6 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}><span style={{ color: c.textSecondary }}>Наличные:</span><span style={{ fontWeight: 600, color: '#16A34A' }}>{Number(result.report.totalCash || 0).toLocaleString('ru-RU')} сум</span></div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}><span style={{ color: c.textSecondary }}>Карта:</span><span style={{ fontWeight: 600, color: '#2563EB' }}>{Number(result.report.totalCard || 0).toLocaleString('ru-RU')} сум</span></div>
+                {Number(result.report.totalOther || 0) > 0 && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}><span style={{ color: c.textSecondary }}>Другое:</span><span style={{ color: c.text }}>{Number(result.report.totalOther || 0).toLocaleString('ru-RU')} сум</span></div>
+                )}
+              </div>
+              <div style={{ borderTop: `1px solid ${c.border}`, margin: '6px 0', paddingTop: 6 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: c.textSecondary }}>Начало смены:</span><span>{Number(shift.openingBalance).toLocaleString('ru-RU')} сум</span></div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 2 }}><span style={{ color: c.textSecondary }}>Должно быть:</span><span style={{ fontWeight: 700, color: '#16A34A' }}>{Number(result.report.expectedCash || 0).toLocaleString('ru-RU')} сум</span></div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 2 }}><span style={{ color: c.textSecondary }}>Факт наличными:</span><span style={{ fontWeight: 600 }}>{Number(result.report.actualCash || 0).toLocaleString('ru-RU')} сум</span></div>
+              </div>
               {result.report.difference != null && (
                 <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: `1px solid ${c.border}`, paddingTop: 6, marginTop: 6 }}>
                   <span style={{ color: c.textSecondary }}>{Number(result.report.difference) >= 0 ? 'Излишек:' : 'Недостача:'}</span>
@@ -149,14 +159,26 @@ export function CloseShiftModal({ open, shift, onClose }: CloseShiftModalProps) 
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}><span style={{ color: c.textSecondary }}>Продажи:</span><span style={{ fontWeight: 600 }}>{report.totalSales.toLocaleString('ru-RU')} сум</span></div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}><span style={{ color: c.textSecondary }}>Заказов:</span><span>{report.totalOrders}</span></div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}><span style={{ color: c.textSecondary }}>Позиций:</span><span>{report.totalItems}</span></div>
+
               <div style={{ borderTop: `1px solid ${c.border}`, margin: '8px 0', paddingTop: 8 }}>
-                {Object.entries(report.paymentMethods).map(([m, v]) => (
-                  <div key={m} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}><span style={{ color: c.textSecondary }}>{m}:</span><span>{Number(v).toLocaleString('ru-RU')} сум</span></div>
-                ))}
+                {Object.entries(report.paymentMethods).map(([m, v]) => {
+                  const labels: Record<string, string> = { CASH: 'Наличные', CARD: 'Карта', CLICK: 'Click', PAYME: 'Payme', UZUM_BANK: 'Uzum Bank' };
+                  return (
+                    <div key={m} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4, alignItems: 'center' }}>
+                      <span style={{ color: c.textSecondary }}>{labels[m] || m}:</span>
+                      <span style={{ fontWeight: m === 'CASH' || m === 'CARD' ? 600 : 400, color: m === 'CASH' ? '#16A34A' : m === 'CARD' ? '#2563EB' : c.text }}>{Number(v).toLocaleString('ru-RU')} сум</span>
+                    </div>
+                  );
+                })}
               </div>
+
               <div style={{ borderTop: `1px solid ${c.border}`, marginTop: 8, paddingTop: 8 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: c.textSecondary }}>Начало смены:</span><span>{shift.openingBalance.toLocaleString('ru-RU')} сум</span></div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 600 }}><span>Ожидается наличными:</span><span>{expectedCash.toLocaleString('ru-RU')} сум</span></div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
+                  <span style={{ color: c.textSecondary }}>Наличных должно быть:</span>
+                  <span style={{ fontWeight: 700, color: '#16A34A', fontSize: 14 }}>{expectedCash.toLocaleString('ru-RU')} сум</span>
+                </div>
+                <p style={{ fontSize: 11, color: c.textSecondary, marginTop: 4 }}>Начало смены + оплата наличными</p>
               </div>
             </div>
           )}
