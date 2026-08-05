@@ -592,7 +592,7 @@ async function handleShifts(req: VercelRequest, res: VercelResponse, origin: str
       const { data: existing } = await supabase.from('shifts').select('id').eq('cashierId', payload.sub).eq('status', 'OPEN').limit(1);
       if (existing && existing.length > 0) return error(res, 'Уже есть открытая смена', 400, origin);
       const { data, error: e } = await supabase.from('shifts').insert({
-        cashierId: payload.sub, branchId: payload.branchId || 'c0000001-0000-0000-0000-000000000001',
+        cashierId: payload.sub,
         openingBalance: Number(openingBalance), status: 'OPEN',
       }).select().single();
       if (e) return error(res, e.message, 500, origin);

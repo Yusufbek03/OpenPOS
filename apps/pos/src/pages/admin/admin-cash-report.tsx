@@ -3,7 +3,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { DollarSign, CreditCard, Smartphone, ArrowDownCircle, ArrowUpCircle, Plus, X, Lock, Calendar, TrendingUp, ShoppingCart } from 'lucide-react';
 import { useShiftStore } from '@/stores/shift-store';
-import { OpenShiftModal } from '@/components/pos/open-shift-modal';
 import { CloseShiftModal } from '@/components/pos/close-shift-modal';
 
 interface PaymentByMethod {
@@ -32,7 +31,6 @@ export function AdminCashReport() {
   const queryClient = useQueryClient();
   const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [showOp, setShowOp] = useState(false);
-  const [showOpenShift, setShowOpenShift] = useState(false);
   const [showCloseShift, setShowCloseShift] = useState(false);
   const [opForm, setOpForm] = useState<{ type: 'CASH_IN' | 'CASH_OUT'; amount: string; reason: string }>({ type: 'CASH_IN', amount: '', reason: '' });
   const { currentShift, fetchCurrentShift } = useShiftStore();
@@ -121,13 +119,9 @@ export function AdminCashReport() {
           <button onClick={() => setShowOp(true)} style={{ ...btnPrimary, background: '#F59E0B' }}>
             <Plus style={{ width: 16, height: 16 }} /> Операция
           </button>
-          {currentShift ? (
+          {currentShift && (
             <button onClick={() => setShowCloseShift(true)} style={{ ...btnPrimary, background: '#DC2626' }}>
               <Lock style={{ width: 16, height: 16 }} /> Закрыть смену
-            </button>
-          ) : (
-            <button onClick={() => setShowOpenShift(true)} style={{ ...btnPrimary, background: '#22C55E' }}>
-              <Lock style={{ width: 16, height: 16 }} /> Открыть смену
             </button>
           )}
         </div>
@@ -271,7 +265,6 @@ export function AdminCashReport() {
         </div>
       )}
 
-      <OpenShiftModal open={showOpenShift} onClose={() => { setShowOpenShift(false); fetchCurrentShift(); }} />
       <CloseShiftModal open={showCloseShift} shift={currentShift} onClose={() => { setShowCloseShift(false); fetchCurrentShift(); }} />
     </div>
   );

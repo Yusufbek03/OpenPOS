@@ -1,9 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
-import { Search, Users, LogOut, Wifi, WifiOff, Settings, Sun, Moon, Download, Wallet, Calendar } from 'lucide-react';
+import { Search, Users, LogOut, Wifi, WifiOff, Settings, Sun, Moon, Download, Calendar } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth-store';
 import { useTheme } from '@/hooks/use-theme';
 import { useShiftStore } from '@/stores/shift-store';
-import { OpenShiftModal } from './open-shift-modal';
 import { CloseShiftModal } from './close-shift-modal';
 
 interface TopBarProps {
@@ -18,15 +17,20 @@ export function TopBar({ searchQuery, onSearchChange, isOnline, onAdminClick, on
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
   const { c, toggleTheme, theme } = useTheme();
-  const { currentShift, fetchCurrentShift } = useShiftStore();
+  const { currentShift, fetchCurrentShift, openShift } = useShiftStore();
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [canInstall, setCanInstall] = useState(false);
-  const [showOpenShift, setShowOpenShift] = useState(false);
   const [showCloseShift, setShowCloseShift] = useState(false);
   const tapCount = useRef(0);
   const tapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => { fetchCurrentShift(); }, []);
+  useEffect(() => {
+    fetchCurrentShift().then(() => {
+      if (!useShiftStore.getState().currentShift) {
+        openShift(0).catch(() => {});
+      }
+    });
+  }, []);
 
   const handleLogoTap = () => {
     tapCount.current++;
@@ -79,21 +83,13 @@ export function TopBar({ searchQuery, onSearchChange, isOnline, onAdminClick, on
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          {currentShift ? (
+          {currentShift && (
             <button onClick={() => setShowCloseShift(true)} style={{
               display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, padding: '5px 10px', borderRadius: 8,
               background: c.successBg, color: c.success, fontWeight: 500, border: `1px solid ${c.success}20`, cursor: 'pointer',
             }}>
               <Calendar style={{ width: 13, height: 13 }} />
-              Смена открыта · {shiftTime}
-            </button>
-          ) : (
-            <button onClick={() => setShowOpenShift(true)} style={{
-              display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, padding: '5px 10px', borderRadius: 8,
-              background: c.warningBg || '#FEF3C7', color: '#D97706', fontWeight: 500, border: '1px solid #FCD34D40', cursor: 'pointer',
-            }}>
-              <Wallet style={{ width: 13, height: 13 }} />
-              Открыть смену
+              Смена · {shiftTime}
             </button>
           )}
 
@@ -139,7 +135,6 @@ export function TopBar({ searchQuery, onSearchChange, isOnline, onAdminClick, on
         </div>
       </header>
 
-      <OpenShiftModal open={showOpenShift} onClose={() => setShowOpenShift(false)} />
       <CloseShiftModal open={showCloseShift} shift={currentShift} onClose={() => setShowCloseShift(false)} />
     </>
   );
