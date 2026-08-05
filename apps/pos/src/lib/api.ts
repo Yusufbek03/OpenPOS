@@ -26,6 +26,8 @@ api.interceptors.request.use((config) => {
     config.url = '/kitchen-handler';
   } else if (url === '/payments') {
     config.url = '/admin-handler?_path=payments';
+  } else if (url === '/orders' || url.startsWith('/orders/')) {
+    config.url = `/admin-handler?_path=${encodeURIComponent(url.substring(1))}`;
   } else if (url === '/shifts') {
     config.url = '/admin-handler?_path=shifts';
   } else if (url.startsWith('/reports/')) {

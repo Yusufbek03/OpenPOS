@@ -41,6 +41,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (entityPath === 'reports/profit') return handleProfitReport(req, res, origin);
   if (entityPath === 'reports/period') return handlePeriodReport(req, res, origin);
   if (entityPath === 'shifts') return handleShifts(req, res, origin, payload);
+  if (entityPath === 'orders' && req.method === 'POST') return handleCreateOrder(req, res, origin, payload);
+  if (entityPath.match(/^orders\/[^/]+\/send-to-kitchen$/) && req.method === 'POST') return handleSendToKitchen(req, res, origin, slug[1]);
+  if (entityPath.match(/^orders\/[^/]+\/return$/) && req.method === 'POST') return handleReturnOrder(req, res, origin, slug[1]);
   if (entityPath === 'audit') return handleAudit(req, res, origin);
   if (entityPath === 'register-ops') return handleRegisterOps(req, res, origin, payload);
   if (entityPath === 'inventory') return handleInventory(req, res, origin);
@@ -643,4 +646,65 @@ async function handleShifts(req: VercelRequest, res: VercelResponse, origin: str
   }
 
   return error(res, 'Method not allowed', 405, origin);
+}
+
+async function handleCreateOrder(req: VercelRequest, res: VercelResponse, origin: string | undefined, payload: Record<string, unknown>) {
+  if (req.method !== 'POST') return error(res, 'POST only', 405, origin);
+  const { items, customerId, tableId, notes, discount } = req.body;
+  if (!items || !items.length) return error(res, 'items required', 400, origin);
+
+  let subtotal = 0;
+  for (const item of items) {
+    const lineTotal = Number(item.unitPrice) * Number(item.quantity) - Number(item.discount || 0);
+    subtotal += lineTotal;
+  }
+  const total = subtotal - Number(discount || 0);
+
+  const orderNumber = `ORD-${Date.now().toString(36).toUpperCase()}`;
+
+  const { data: order, error: e1 } = await supabase.from('orders').insert({
+    orderNumber,
+    status: 'PENDING',
+    cashierId: payload.sub,
+    customerId: customerId || null,
+    tableId: tableId || null,
+    notes: notes || null,
+    subtotal,
+    discount: Number(discount || 0),
+    tax: 0,
+    total: Math.max(0, total),
+    createdBy: payload.sub,
+  }).select('id, orderNumber, status, total, createdAt').single();
+
+  if (e1) return error(res, e1.message, 500, origin);
+
+  const orderItems = items.map((item: any) => ({
+    orderId: order.id,
+    productId: item.productId,
+    quantity: Number(item.quantity),
+    unitPrice: Number(item.unitPrice),
+    discount: Number(item.discount || 0),
+    total: Number(item.unitPrice) * Number(item.quantity) - Number(item.discount || 0),
+    note: item.note || null,
+    status: 'NEW',
+  }));
+
+  const { error: e2 } = await supabase.from('order_items').insert(orderItems);
+  if (e2) return error(res, e2.message, 500, origin);
+
+  return json(res, { id: order.id, orderNumber: order.orderNumber, status: order.status, total: order.total, createdAt: order.createdAt }, 201, origin);
+}
+
+async function handleSendToKitchen(req: VercelRequest, res: VercelResponse, origin: string | undefined, orderId: string) {
+  const { error: e } = await supabase.from('orders').update({ status: 'SENT_TO_KITCHEN', updatedAt: new Date().toISOString() }).eq('id', orderId);
+  if (e) return error(res, e.message, 500, origin);
+  await supabase.from('order_items').update({ status: 'SENT_TO_KITCHEN' }).eq('orderId', orderId);
+  return json(res, { message: 'Sent to kitchen', orderId }, 200, origin);
+}
+
+async function handleReturnOrder(req: VercelRequest, res: VercelResponse, origin: string | undefined, orderId: string) {
+  const { error: e } = await supabase.from('orders').update({ status: 'RETURNED', updatedAt: new Date().toISOString() }).eq('id', orderId);
+  if (e) return error(res, e.message, 500, origin);
+  await supabase.from('order_items').update({ status: 'RETURNED' }).eq('orderId', orderId);
+  return json(res, { message: 'Order returned', orderId }, 200, origin);
 }
